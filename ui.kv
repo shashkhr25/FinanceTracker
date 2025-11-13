@@ -161,6 +161,8 @@
 				foreground_color: rgba("#E2E8F0ff")
 				padding: dp(12)
 				radius: [12,12,12,12]
+				multiline: False
+				on_text_validate: description_field.focus = True
 			Label:
 				text: "Description"
 				color: rgba("#E2E8F0FF")
@@ -173,6 +175,7 @@
 				foreground_color: rgba("#E2E8F0ff")
 				padding: dp(12)
 				radius: [12,12,12,12]
+				multiline: False
 			Label:
 				text: "Category"
 				color: rgba("#E2E8F0FF")
@@ -255,7 +258,7 @@
 				padding: dp(12)
 				radius: [12,12,12,12]
 				multiline: False
-				write_tab: False
+				on_text_validate: description_field.focus = True
 			Label:
 				text: "Description"
 				color: rgba("#E2E8F0FF")
@@ -269,7 +272,7 @@
 				padding: dp(12)
 				radius: [12,12,12,12]
 				multiline: False
-				write_tab: False
+				on_text_validate: category_field.focus = True
 			Label:
 				text: "Category"
 				color: rgba("#E2E8F0FF")
@@ -929,18 +932,21 @@
 						spacing: dp(12)
 						TextInput:
 							id:	initial_balance_input
+							multiline: False
 							hint_text: "Initial Balance"
 							background_color: rgba("#1E293BFF")
 							foreground_color: rgba("#E2E8F0FF")
 							padding: dp(16)
 							radius: [12,12,12,12]
+							on_text_validate: Currency.focus = True
 						TextInput:
-							id:	"Currency"
+							id:	Currency
 							hint_text: "Currency"
 							background_color: rgba("#1E293BFF")
 							foreground_color: rgba("#E2E8F0FF")
 							padding: dp(16)
-							radius: [12,12,12,12]	
+							radius: [12,12,12,12]
+							multiline: False	
 					Button:
 						text: "save"
 						size_hint: None, None

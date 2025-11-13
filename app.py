@@ -5,7 +5,6 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 from typing import Dict
-
 from kivy.app import App
 from kivy.lang import Builder
 from kivy.metrics import dp
@@ -392,10 +391,30 @@ class CategoryTotalsScreen(Screen):
 
 
 class SettingsScreen(Screen):
-        """ commenting block
-        new line of comments
-        """
+    initial_balance_input = ObjectProperty(None)
 
+    def on_pre_enter(self, *_) -> None:
+        self.populate_settings()
+    
+    def populate_settings(self) -> None:
+        settings = read_settings()
+        initial_balance = settings.get("initial balance", 0.0)
+        if self.initial_balance_input:
+            self.initial_balance_input.text = f"{float(initial_balance):.2f}"
+        
+    def save_settings(self) -> None:
+        if not self.initial_balance_input:
+            return
+        text_value = self.initial_balance_input.text.strip()
+        try:
+            initial_balance = float(text_value or 0)
+        except ValueError:
+            print("Invalid initial balance")
+            return
+        settings = dict(read_settings())
+        settings["initial_balance"] = round(initial_balance,2)
+        write_settings(settings)
+        print("Settings saved")
 
 class MoneyTrackerScreenManager(ScreenManager):
         """ commenting block
