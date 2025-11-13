@@ -479,7 +479,7 @@
 		color: rgba("#E2E8F0FF")
 		font_size: sp(14)
 		halign: "left"
-		valign: "medium"
+		valign: "middle"
 		text_size: self.size
 	Label:
 		text: root.amount_text
@@ -487,7 +487,7 @@
 		font_size: sp(14)
 		bold: True
 		halign: "right"
-		valign: "medium"
+		valign: "middle"
 		text_size: self.size
 
 <CategorySummaryRow@BoxLayout>:
@@ -954,8 +954,19 @@
 						background_color: rgba("#22C55EFF")
 						color: rgba("#FFFFFF")
 						pos_hint: {"center_x":0.5}
-						on_release: root.save_settings()						
-
+						on_release: root.save_settings()		
+		GridLayout:
+			cols:1
+			spacing: dp(12)
+			padding: dp(20)
+			Button:
+				text: "Start New Month"
+				size_hint: None, None
+				size: dp(160), dp(44)
+				background_color: rgba("#71ce92ff")
+				color: rgba("#FFFFFF")
+				pos_hint: {"center_x":0.5}
+				on_release: root.start_new_month()		
 
 MoneyTrackerScreenManager:
 	DashboardScreen:

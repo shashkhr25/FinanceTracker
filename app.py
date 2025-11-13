@@ -18,7 +18,7 @@ from kivy.factory import Factory
 # ------------------------------------------------------------------ #
 # Storage & Logic
 # ------------------------------------------------------------------ #
-from storage import append_transaction, ensure_data_dir, read_settings, read_transactions, write_settings
+from storage import append_transaction, ensure_data_dir, read_settings, read_transactions, write_settings, start_new_month_transactionfile
 from logic import (
     CREDIT_CARD_DEVICES,
     compute_balance,
@@ -415,6 +415,9 @@ class SettingsScreen(Screen):
         settings["initial_balance"] = round(initial_balance,2)
         write_settings(settings)
         print("Settings saved")
+
+    def start_new_month(self) -> None:
+        start_new_month_transactionfile()
 
 class MoneyTrackerScreenManager(ScreenManager):
         """ commenting block

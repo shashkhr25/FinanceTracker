@@ -6,13 +6,16 @@ import csv
 import json
 import os
 import tempfile
+import datetime
+from dateutil.relativedelta import relativedelta
 from pathlib import Path
 from typing import Iterable, Mapping, Sequence, MutableMapping, Dict, Any, List
-
+import shutil
 # --- Configuration & Constants ---
 
 DEFAULT_DATA_DIR = Path("data")
 TRANSACTIONS_CSV = DEFAULT_DATA_DIR / "transactions.csv"
+OLDER_TRANSACTIONS_CSV = DEFAULT_DATA_DIR / "transactions_"
 SETTINGS_JSON = DEFAULT_DATA_DIR / "settings.json"
 
 CSV_COLUMNS: Sequence[str] = [
@@ -41,6 +44,15 @@ def ensure_data_dir(data_dir: Path = DEFAULT_DATA_DIR) -> None:
             csv.writer(handle).writerow(CSV_COLUMNS) # Simplified header writing
     if not SETTINGS_JSON.exists():
         write_settings_json(settings={"currency": "INR", "version": "3"}, settings_path=SETTINGS_JSON)
+
+def start_new_month_transactionfile(data_dir: Path = DEFAULT_DATA_DIR) -> None:
+    """Ensures the data directory and placeholder files exist."""
+    data_dir.mkdir(parents=True, exist_ok=True)
+    today = datetime.date.today()
+    last_month_date = today + relativedelta(months=-1)
+    last_month_name = last_month_date.strftime("%B")
+    if TRANSACTIONS_CSV.exists():
+        shutil.copyfile(TRANSACTIONS_CSV , str(OLDER_TRANSACTIONS_CSV) +last_month_name+".csv" )
 
 def write_settings_json(settings: Mapping[str, object], settings_path: Path) -> None:
     """Persist settings as JSON via atomic write."""
