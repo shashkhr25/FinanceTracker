@@ -162,18 +162,16 @@ def compute_balance(transactions: Sequence[Transaction], initial_balance: float)
 def compute_outstanding_debt(transactions: Sequence[Transaction]) -> float:
     """Aggregate outstanding debt from credit-card flows."""
     debt_total = 0.0
-    
     for tx in transactions:
         if tx.sub_type == DEFAULT_CREDIT_CARD_DEBT_SUB_TYPE:
             if tx.tx_type == "income":
-                debt_total -= tx.amount
-            elif tx.tx_type == "expense":
                 debt_total += tx.amount
+            elif tx.tx_type == "expense":
+                debt_total -= tx.amount
         
         elif tx.sub_type == "credit_card_payment" and tx.tx_type == "expense":
             debt_total -= tx.amount
-
-    return round(max(debt_total, 0.0), 2)
+    return round(max(debt_total,0.0), 2)
 
 def compute_savings_totals(transactions: Sequence[Transaction]) -> Dict[str, float]:
     """Aggregate savings-related expenses by configured categories."""

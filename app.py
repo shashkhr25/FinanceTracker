@@ -221,7 +221,6 @@ class DashboardScreen(Screen):
 
         balance_value = compute_balance(transactions, initial_balance=initial_balance)
         debt_value = compute_outstanding_debt(transactions)
-
         self.current_balance_text = f"{balance_value:,.2f}"
         self.balance_caption = f"Initial Balance {initial_balance:,.2f}"
         self.outstanding_debt_text = f"{debt_value:,.2f}"
