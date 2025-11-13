@@ -22,3 +22,4 @@ The tool should provide visual representations of financial data to facilitate u
 
 
 ## User Interface
+![Alt text](https://github.com/shashkhr25/FinanceTracker/blob/main/Screenshots/UI.png)
