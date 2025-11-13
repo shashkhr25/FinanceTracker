@@ -1,0 +1,6 @@
+id,timestamp,tx_type,sub_type,amount,date,description,category,device,location,occasion,effects_balance,linked_tx_id
+4a6b195d2b464c9faf2f1e81cf73a84c,2025-11-11T14:25:46.197677,expense,regular,50.00,2025-11-11,test,Food,UPI,,,True,
+2a5194036065409cabf0de4527ee6305,2025-11-11T14:26:14.662820,expense,regular,60.00,2025-11-11,,Food,UPI,,,True,
+62f0584766414d2d90775149ab41e247,2025-11-11T14:26:46.943742,expense,regular,7.00,2025-11-11,,Food,UPI,,,True,
+5e5947cb44a94d2cb1c4897a7fb2e075,2025-11-11T14:34:42.274191,expense,regular,90.00,2025-11-11,test,Food,UPI,,,True,
+515b235395c149c4ab277e9df15fde24,2025-11-11T14:36:10.793919,expense,regular,999.00,2025-11-11,,Others,UPI,,,True,

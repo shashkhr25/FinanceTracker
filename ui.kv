@@ -1,0 +1,959 @@
+#:import rgba kivy.utils.get_color_from_hex
+#:import dp kivy.metrics.dp
+#:import sp kivy.metrics.sp
+
+<AccentButton@Button>:
+	size_hint: None,None
+	height: dp(44)
+	width: dp(160)
+	background_normal: ""
+	background_color: rgba("#2D3436")
+	color:rgba("#FFFFFF")
+	font_size: sp(16)
+	bold: True
+	radius: [22,22,22,22]
+
+<MetricCard@BoxLayout>:
+	orientation: "vertical"
+	padding: dp(16)
+	spacing: dp(6)
+	size_hint_y: None
+	height: dp(120)
+	metric_title: "Metric"
+	metric_value: "0.00"
+	metric_caption: ""
+	bg_color: rgba("#FFFFFF")
+	canvas.before:
+		Color:
+			rgba: root.bg_color if root.bg_color else rgba("#FFFFFF")
+		RoundedRectangle:
+			pos: self.pos
+			size: self.size
+			radius: [18,18,18,18]
+	Label:
+		text: root.metric_title
+		size_hint_y: None
+		height: self.texture_size[1]
+		color: rgba("#C5CAE9FF")
+		font_size: sp(14)
+		bold: True
+	Label:
+		text: root.metric_value
+		color: rgba("#FFFFFF")
+		font_size: sp(20)
+	Label:
+		text: root.metric_caption
+		color: rgba("#AAB6FEFF")
+		font_size: sp(12)
+
+
+<NavigationDrawer@BoxLayout>:
+	orientation: "vertical"
+	size_hint_x: None
+	width: dp(220)
+	padding: dp(20)
+	spacing: dp(18)
+	canvas.before:
+		Color:
+			rgba: rgba("#0F172AFF")
+		Rectangle:
+			pos: self.pos
+			size: self.size
+	Label:
+		text: "MoneyTracker"
+		font_size: sp(20)
+		color: rgba("#E8EAEDFF")
+		bold: True
+		size_hint_y: None
+		height: self.texture_size[1]
+	Widget:
+		size_hint_y: None
+		height: dp(8)
+	Button:
+		text: "Dashboard"
+		background_normal: ""
+		background_color: 0,0,0,0
+		color: rgba("#FFFFFF")
+		on_release: app.root.current = "dashboard"
+	Button:
+		text: "Transactions"
+		background_normal: ""
+		background_color: 0,0,0,0
+		color: rgba("#FFFFFF")
+		on_release: app.root.current = "transactions"
+	Button:
+		text: "Category Totals"
+		background_normal: ""
+		background_color: 0,0,0,0
+		color: rgba("#FFFFFF")
+		on_release: app.root.current = "category_totals"
+	Button:
+		text: "Networth"
+		background_normal: ""
+		background_color: 0,0,0,0
+		color: rgba("#FFFFFF")
+		on_release: app.root.current = "networth"
+	Button:
+		text: "Settings"
+		background_normal: ""
+		background_color: 0,0,0,0
+		color: rgba("#FFFFFF")
+		on_release: app.root.current = "settings"	
+	Widget:
+		size_hint_y:1
+
+<TopAppBar@BoxLayout>:
+	size_hint_y: None
+	height: dp(64)
+	padding: dp(16)
+	spacing: dp(16)
+	canvas.before:
+		Color:
+			rgba: rgba("#0B1020FF")
+		Rectangle:
+			pos: self.pos
+			size: self.size
+
+
+<AddExpenseDialog@ModalView>:
+	size_hint: None, None
+	size: dp(300), dp(350)
+	auto_dismiss: False
+	background_color: 0,0,0,0.4
+	parent_screen: None
+	amount_input: amount_field
+	description_input: description_field
+	category_input: category_field
+	device_spinner: device_spinner
+	BoxLayout:
+		orientation: "vertical"
+		padding: dp(24)
+		spacing: dp(16)
+		canvas.before:
+			Color:
+				rgba: rgba("#10172AFF")
+			RoundedRectangle:
+				pos: self.pos
+				size: self.size
+				radius: [18,18,18,18]
+		Label:
+			text: "Add Expense"
+			font_size: sp(20)
+			color: rgba("#FFFFFF")
+			bold: True
+			size_hint_y: None
+			height: self.texture_size[1]
+		GridLayout:
+			cols:2
+			spacing: dp(12)
+			size_hint_y: None
+			height: dp(200)
+			Label:
+				text: "Amount"
+				color: rgba("#E2E8F0FF")
+				size_hint_y: None
+				height: dp(32)
+			TextInput:
+				id: amount_field
+				input_filter: "float"
+				hint_text: "0.00"
+				background_color: rgba("#1E293BFF")
+				foreground_color: rgba("#E2E8F0ff")
+				padding: dp(12)
+				radius: [12,12,12,12]
+			Label:
+				text: "Description"
+				color: rgba("#E2E8F0FF")
+				size_hint_y: None
+				height: dp(32)
+			TextInput:
+				id: description_field
+				hint_text: "Optional"
+				background_color: rgba("#1E293BFF")
+				foreground_color: rgba("#E2E8F0ff")
+				padding: dp(12)
+				radius: [12,12,12,12]
+			Label:
+				text: "Category"
+				color: rgba("#E2E8F0FF")
+				size_hint_y: None
+				height: dp(32)
+			Spinner:
+				id: category_field
+				text: "Food"
+				values: ["Food","Home","Transportation","Personal","Rent","House EMI","Gym","Utilities","Shopping","Petrol","Savings","Subscription/Recharge","Savings RD","Savings FD","Book","Credit Card Bill", "Credit Card UPI Bill", "Others"]
+			Label:
+				text: "Device"
+				color: rgba("#E2E8F0FF")
+				size_hint_y: None
+				height: dp(32)
+			Spinner:
+				id: device_spinner
+				text: "UPI"
+				values: ["Cash","UPI","Credit Card", "Credit Card UPI"]
+		BoxLayout:
+			size_hint_y: None
+			height: dp(52)
+			spacing: dp(12)
+			Button:
+				text: "Cancel"
+				background_normal: ""
+				background_color: rgba("#4B5563FF")
+				color: rgba("#FFFFFF")
+				on_release: root.dismiss()
+			Button:
+				text: "Add Expense"
+				background_normal: ""
+				background_color: rgba("#EF5350FF")
+				color: rgba("#FFFFFF")
+				on_release: root.handle_submit()
+
+<AddIncomeDialog@ModalView>:
+	size_hint: None, None
+	size: dp(300), dp(350)
+	auto_dismiss: False
+	background_color: 0,0,0,0.4
+	parent_screen: None
+	amount_input: amount_field
+	description_input: description_field
+	category_input: category_field
+	device_spinner: device_spinner
+	BoxLayout:
+		orientation: "vertical"
+		padding: dp(24)
+		spacing: dp(16)
+		canvas.before:
+			Color:
+				rgba: rgba("#10172AFF")
+			RoundedRectangle:
+				pos: self.pos
+				size: self.size
+				radius: [18,18,18,18]
+		Label:
+			text: "Add Income"
+			font_size: sp(20)
+			color: rgba("#FFFFFF")
+			bold: True
+			size_hint_y: None
+			height: self.texture_size[1]
+		GridLayout:
+			cols:2
+			spacing: dp(12)
+			size_hint_y: None
+			height: dp(200)
+			Label:
+				text: "Amount"
+				color: rgba("#E2E8F0FF")
+				size_hint_y: None
+				height: dp(32)
+			TextInput:
+				id: amount_field
+				input_filter: "float"
+				hint_text: "0.00"
+				background_color: rgba("#1E293BFF")
+				foreground_color: rgba("#E2E8F0ff")
+				padding: dp(12)
+				radius: [12,12,12,12]
+				multiline: False
+				write_tab: False
+			Label:
+				text: "Description"
+				color: rgba("#E2E8F0FF")
+				size_hint_y: None
+				height: dp(32)
+			TextInput:
+				id: description_field
+				hint_text: "Optional"
+				background_color: rgba("#1E293BFF")
+				foreground_color: rgba("#E2E8F0ff")
+				padding: dp(12)
+				radius: [12,12,12,12]
+				multiline: False
+				write_tab: False
+			Label:
+				text: "Category"
+				color: rgba("#E2E8F0FF")
+				size_hint_y: None
+				height: dp(32)
+			TextInput:
+				id: category_field
+				hint_text: "eg. Salary"
+				background_color: rgba("#1E293BFF")
+				foreground_color: rgba("#E2E8F0FF")
+				padding: dp(12)
+				radius: [12,12,12,12]
+				multiline : False
+				write_tab: False
+			Label:
+				text: "Device"
+				color: rgba("#E2E8F0FF")
+				size_hint_y: None
+				height: dp(32)
+			Spinner:
+				id: device_spinner
+				text: "Paycheck"
+				values: ["Paycheck", "Home", "Personal split paid", "Others"]
+		BoxLayout:
+			size_hint_y: None
+			height: dp(52)
+			spacing: dp(12)
+			Button:
+				text: "Cancel"
+				background_normal: ""
+				background_color: rgba("#4B5563FF")
+				color: rgba("#FFFFFF")
+				on_release: root.dismiss()
+			Button:
+				text: "Add Income"
+				background_normal: ""
+				background_color: rgba("#EF5350FF")
+				color: rgba("#FFFFFF")
+				on_release: root.handle_submit()
+
+<GlassCard@BoxLayout>:
+	orientation: "vertical"
+	padding: dp(16)
+	spacing: dp(8)
+	size_hint_y: None
+	height: dp(180)
+	canvas.before:
+		Color:
+			rgba: (30/255, 34/255, 45/255, 0.62)
+		RoundedRectangle:
+			pos: self.pos
+			size: self.size
+			radius:[24,24,24,24]
+
+#Themeded dropdown
+<ThemedSpinnerDropdown@SpinnerDropdown>:
+	background_normal: ""
+	background_down: ""
+	background_color: 0,0,0,0
+	border : (0,0,0,0)
+	auto_dismiss: True
+	max_height: dp(240)
+
+	canvas.before:
+		# Outer subtle shadow
+		Color:
+			rgba: rgba("#1E293BFF")
+		RoundedRectangle:
+			pos: self.x - dp(3), self.y - dp(3)
+			size: (self.width + dp(6), self.height + dp(6))
+			radius: [18,18,18,18]
+		# main background
+		Color:
+			rgba: rgba("#0F172AFF")
+		RoundedRectangle:
+			pos: self.pos
+			size: self.size
+			radius: [14,14,14,14]
+		# inner accent
+		Color:
+			rgba: rgba("#1E293BFF")
+		RoundedRectangle:
+			pos: self.x + dp(1), self.y + dp(1)
+			size: (self.width - dp(2), self.height - dp(2))
+			radius: [12,12,12,12]
+
+#Your Spinner 
+<Spinner>:
+	background_normal: ""
+	background_down: ""
+	background_color: rgba("#1E293BFF")
+	color: rgba("#E2E8F0FF")
+	size_hint_y: None
+	height: dp(40)
+	font_size: sp(14)
+	padding: [dp(14), dp(10)]
+	border: (0,0,0,0)
+	dropdown_cls: 'ThemedSpinnerDropdown'
+	option_cls: 'SpinnerOption'
+	canvas.before:
+		Color:
+			rgba: rgba("#1E293BFF")
+		RoundedRectangle:
+			pos: self.pos
+			size: self.size
+			radius: [12,12,12,12]
+
+#Option style
+<SpinnerOption@Button>:
+	background_normal: ""
+	background_down: ""
+	background_color: 0,0,0,0
+	color: rgba("#E2E8F0FF")	
+	font_size: sp(14)
+	padding: [dp(16), dp(12)]
+	size_hint_y: None
+	height: dp(40)
+	canvas.before:
+		Color:
+			rgba: rgba("#334155FF")
+		RoundedRectangle:
+			pos: self.pos
+			size: self.size
+			radius: [10,10,10,10]
+
+
+<TransactionRow@BoxLayout>:
+	date_text : ""
+	category_text: ""
+	description_text: ""
+	device_text: ""
+	amount_text: ""
+	amount_color: rgba("#86EFACFF")
+	orientation: "horizontal"
+	size_hint_y: None
+	height: dp(72)
+	padding: dp(16)
+	spacing: dp(16)
+	canvas.before:
+		Color:
+			rgba: (26/255, 32/255, 45/255, 0.6)
+		RoundedRectangle:
+			pos: self.pos
+			size: self.size
+			radius: [16,16,16,16]
+	Label:
+		text: root.date_text
+		size_hint_x: None
+		width: dp(90)
+		color: rgba("#94A3B8FF")
+		font_size: sp(14)
+	BoxLayout:
+		orientation: "vertical"
+		spacing: dp(2)
+		Label:
+			text: root.category_text
+			color: rgba("#E2E8F0FF")
+			font_size: sp(16)
+			bold: True
+			text_size: self.width, None
+			halign: "left"
+			valigh: "middle"
+		Label:	
+			text: root.description_text
+			color: rgba("#94A3B8FF")
+			font_size: sp(12)
+			text_size: self.width, None
+			halign: "left"
+			valign: "middle"
+	BoxLayout:
+		orientation: "vertical"
+		size_hint_x: None
+		width: dp(120)
+		Label:
+			text: root.device_text
+			color: rgba("#94A3B8FF")
+			font_size: sp(12)
+		Label:
+			text: root.amount_text
+			color: root.amount_color
+			font_size: sp(16)
+			bold: True
+			halign: "right"
+			text_size: self.size
+			valign: "middle"
+
+<SavingsSummaryRow@BoxLayout>:
+	label_text: ""
+	amount_text: "0.00"
+	amount_color: rgba("#0EA5E9FF")
+	size_hint_y: None
+	height: dp(32)
+	padding: [dp(12),0]
+	spacing: dp(12)
+	canvas.before:
+		Color:
+			rgba: (26/255, 32/255, 45/255, 0.5)
+		RoundedRectangle:
+			pos: self.pos
+			size: self.size
+			radius: [10,10,10,10]
+	Label:
+		text: root.label_text
+		color: rgba("#E2E8F0FF")
+		font_size: sp(14)
+		halign: "left"
+		valign: "medium"
+		text_size: self.size
+	Label:
+		text: root.amount_text
+		color: root.amount_color
+		font_size: sp(14)
+		bold: True
+		halign: "right"
+		valign: "medium"
+		text_size: self.size
+
+<CategorySummaryRow@BoxLayout>:
+	category_text: ""
+	amount_text: ""
+	amount_color: rgba("#FFFFFF")
+	budget_text: ""
+	variance_text: "0.00"
+	variance_color: rgba("#FFFFFF")
+	screen_name: "category_totals"
+	orientation: "horizontal"
+	size_hint_y: None
+	height: dp(30)
+	padding: [dp(16),dp(12)]
+	spacing: dp(16)
+	canvas.before:
+		Color:
+			rgba: (26/255, 32/255, 45/255, 0.6)
+		RoundedRectangle:
+			pos: self.pos
+			size: self.size
+			radius: [14,14,14,14]
+	Label:
+		text: root.category_text
+		color: rgba("#E2E8F0FF")
+		font_size: sp(14)
+		bold: True
+		halign: "left"
+		valign: "middle"
+		text_size: self.size
+		size_hint_x: 0.4
+	Label:
+		text: root.amount_text
+		color: root.amount_color
+		font_size: sp(13)
+		bold: True
+		size_hint_x: 0.2
+		halign: "left"
+		valign: "middle"
+		text_size: self.size
+	TextInput:
+		size_hint_x: None
+		size_hint_y: None
+		width: dp(88)
+		height: dp(24)
+		text: root.budget_text
+		hint_text: "Budget"
+		background_color: rgba("#1E293BFF")
+		foreground_color: rgba("#E2E8F0FF")
+		cursor_color: rgba("#38BDF8FF")
+		padding: [dp(8), dp(4)]
+		radius: [12,12,12,12]
+		font_size: sp(12)
+		input_filter: "float"
+		multiline: False
+		write_tab: False
+		halign: "center"
+		on_focus:	
+			(app.root.get_screen(root.screen_name).handle_budget_input(root.category_text, self.text) if app.root and not self.focus else None )
+		on_text_validate:
+			(app.root.get_screen(root.screen_name).handle_budget_input(root.category_text, self.text) if app.root else None)
+	Label:
+		text: root.variance_text
+		color: root.variance_color
+		font_size: sp(13)
+		bold: True
+		size_hint_x: 0.2
+		halign: "right"
+		valign: "middle"
+		text_size: self.size
+
+<DashboardScreen>:
+	name: "dashboard"
+	BoxLayout:
+		orientation: "horizontal"
+		NavigationDrawer:
+		BoxLayout:
+			orientation: "vertical"
+			canvas.before:
+				Color:
+					rgba: rgba("#0B1020FF")
+				Rectangle: 
+					pos: self.pos
+					size: self.size
+			TopAppBar:
+			ScrollView:
+				do_scroll_x: False
+				GridLayout:
+					cols:1
+					size_hint_y: None
+					height: self.minimum_height
+					padding: dp(24)
+					spacing: dp(24)
+					GridLayout:
+						cols:3
+						size_hint_y: None
+						height: dp(160)
+						spacing: dp(18)
+						MetricCard:
+							metric_title: "Current Balance"
+							metric_value: root.current_balance_text
+							metric_caption: root.balance_caption
+							bg_color: rgba("#1E293BFF")
+						MetricCard:
+							metric_title: "Outstanding Debt"
+							metric_value: root.outstanding_debt_text
+							metric_caption: root.outstanding_debt_caption
+							bg_color: rgba("#7C3AEDFF")
+					BoxLayout:
+						orientation: "horizontal"
+						size_hint_y: None
+						height: dp(64)
+						padding: [20,0,20,0]
+						spacing: dp(16)
+						AnchorLayout:
+							anchor_x: "left"
+							anchor_y: "center"
+							AccentButton:
+								text: "Add expense"
+								background_color: rgba("#EF5250FF")
+								size_hint: None, None
+								size: dp(180), dp(50)
+								on_release: app.root.get_screen("dashboard").open_add_expense()
+						AnchorLayout:
+							anchor_x: "right"
+							anchor_y: "center"
+							AccentButton:
+								text: "Add Income"
+								background_color: rgba("#66BB6AFF")
+								size_hint: None, None
+								size: dp(180), dp(50)
+								on_release: app.root.get_screen("dashboard").open_add_income()						
+
+
+<CategoryTotalsScreen>:
+	name: "category_totals"
+	category_summary: []
+	BoxLayout:
+		orientation: "horizontal"
+		NavigationDrawer:
+		BoxLayout:
+			orientation: "vertical"
+			canvas.before:
+				Color:
+					rgba: rgba("#0B1020FF")
+				Rectangle:
+					pos: self.pos
+					size: self.size
+			TopAppBar:
+			BoxLayout:
+				orientation: "vertical"
+				padding: dp(14)
+				spacing: dp(18)
+				size_hint_y: None
+				height: dp(10)
+				Label:
+					text: "Category Totals"
+					color: rgba("#FFFFFF")
+					font_size: sp(12)
+					bold: True
+					halign: "left"
+					valign: "middle"
+					text_size: self.size
+			BoxLayout:
+				orientation: "vertical"
+				padding: dp(10)
+				spacing: dp(8)
+				RecycleView:
+					viewclass: "CategorySummaryRow"
+					data: root.category_summary
+					bar_width: dp(6)
+					scroll_wheel_distance : dp(120)
+					RecycleBoxLayout:
+						default_size: None, dp(50)
+						default_size_hint: 1, None
+						size_hint_y: None
+						height: self.minimum_height
+						orientation: "vertical"
+						spacing: dp(10)
+
+
+<TransactionsScreen>:
+	name: "transactions"
+	rv: transactions_rv
+	empty_level: empty_level
+	BoxLayout:
+		orientation: "vertical"
+		canvas.before:
+			Color:
+				rgba: rgba("#0B1020FF")
+			Rectangle:
+				pos: self.pos
+				size: self.size
+		TopAppBar:
+			Button:
+				size_hint:	None, None
+				size: dp(44), dp(44)
+				text: "<-"
+				font_name: "DejaVuSans.ttf"
+				font_size: sp(20)
+				background_normal: ""
+				background_color: 0,0,0,0
+				color: rgba("#E2E8F0FF")
+				on_release: app.root.current = "dashboard"
+			Label:
+				text: "Transactions"
+				color: rgba("#fff1d6")
+				font_size: sp(20)
+				bold: True
+				text_size: self.size
+				halign: "left"
+				valigh: "middle"
+		BoxLayout:
+			orientation: "vertical"
+			padding: dp(24)
+			spacing: dp(16)
+			BoxLayout:
+				size_hint_y: None
+				height: dp(44)
+				spacing: dp(12)
+				Spinner:
+					text: "Filter"
+					values: ["All"]
+					disabled: True
+			Label:
+				id: empty_level
+				text: "No transactions yet, Add your first expense"
+				opacity: 0
+				size_hint_y: None
+				height: 0
+				color: rgba("#94A3B8FF")
+				font_size: sp(14)
+				halign: "center"
+				valigh: "middle"
+			RecycleView:
+				id: transactions_rv
+				viewclass: "TransactionRow"
+				bar_width: dp(6)
+				scroll_wheel_distance: dp(20)
+				effect_cls: "ScrollEffect"
+				RecycleBoxLayout:
+					default_size: None, dp(72)
+					default_size_hint: 1, None
+					size_hint_y: None
+					height: self.minimum_height
+					orientation: "vertical"
+					spacing: dp(12)
+
+<NetWorthScreen>:
+	name: "networth"
+	BoxLayout:
+		orientation: "vertical"
+		canvas.before:
+			Color:
+				rgba: rgba("#0B1020FF")
+			Rectangle:
+				pos: self.pos
+				size: self.size
+		TopAppBar:
+			Button:
+				size_hint: None,None
+				size: dp(44), dp(44)
+				text: "<-"
+				font_name: "DejaVuSans.ttf"
+				font_size: sp(20)
+				background_normal: ""
+				background_color: 0,0,0,0
+				color: rgba("#E2E8F0FF")
+				on_release: app.root.current = "dashboard"
+		ScrollView:
+			do_scroll_x: False
+			GridLayout:
+				cols:1
+				size_hint_y: None
+				height: self.minimum_height
+				padding : [dp(24), dp(18), dp(24), dp(24)]
+				spacing: dp(18)
+				Label:
+					text: "Net Worth overview"
+					font_size: sp(20)
+					color: rgba("#FFFFFF")
+					bold: True
+					size_hint_y: None
+					height: self.texture_size[1]
+				BoxLayout:
+					orientation: "horizontal"
+					spacing: dp(16)
+					size_hint_y: None
+					height: dp(150)
+					MetricCard:
+						metric_title: "Liquid Balance"
+						metric_value: root.liquid_balance_text
+						metric_caption: root.liquid_balance_caption
+						bg_color: rgba("#1E293BFF")
+					MetricCard:
+						metric_title: "Outstanding Debt"
+						metric_value: root.outstanding_debt_text
+						metric_caption: root.outstanding_debt_caption
+						bg_color: rgba("#1E293BFF")
+					MetricCard:
+						metric_title: "Total Savings"
+						metric_value: root.total_savings_text
+						metric_caption: "Savings Rd/FD"
+						bg_color: rgba("#1E293BFF")
+				BoxLayout:
+					orientation: "horizontal"
+					spacing: dp(16)
+					size_hint_y: None
+					height: dp(260)
+					GlassCard:
+						size_hint_y:None
+						height: dp(260)
+						padding: dp(14)
+						spacing: dp(12)
+						size_hint_x: 0.55
+						Label:
+							text: "Savings Summary"
+							size_hint_y: None
+							height: self.texture_size[1]
+							color: rgba("#E0F2FEFF")
+							bold:True
+						Label:
+							text: root.total_savings_text if root.savings_summary else "No savings transactions yet"
+							color: rgba("#94A3B8FF") if not root.savings_summary else rgba("#FFFFFF")
+							size_hint_y: None
+							height: dp(24)
+							bold:True if root.savings_summary else False
+						RecycleView:
+							viewclass: "SavingsSummaryRow"
+							data: root.savings_summary
+							bar_width: dp(6)
+							scroll_wheel_distance: dp(120)
+							size_hint_y: 1
+							RecycleBoxLayout:
+								default_size: None, dp(36)
+								default_size_hint: 1, None
+								size_hint_y: None
+								height: self.minimum_height
+								orientation: "vertical"
+								spacing: dp(8)
+					GlassCard:
+						size_hint_x : 0.45
+						size_hint_y: None
+						height: dp(260)
+						padding: dp(14)
+						spacing: dp(12)
+						Label:
+							text: "Manual Inputs"
+							size_hint_y: None
+							height: dp(22)
+							color: rgba("#E0F2FEFF")
+							bold:True	
+						ScrollView:
+							do_scroll_x: False
+							do_scroll_y: False
+							size_hint_y:1
+							bar_width: dp(4)
+							GridLayout:
+								cols:1
+								size_hint_y: None
+								height: self.minimum_height
+								spacing: dp(16)
+								BoxLayout:
+									orientation: "vertical"
+									size_hint_y: None
+									height: dp(90)
+									TextInput:
+										hint_text: "Enter Savings amount"
+										background_color: rgba("#1E293BFF")
+										cursor_color: rgba("#38BDF8FF")
+										paddings: [dp(16), dp(12)]
+										radius: [12,12,12,12]
+										font_size: sp(16)
+										size_hint_y: None
+										height: dp(58)
+										multiline: False
+										write_tab: False
+								BoxLayout:
+									orientation: "vertical"
+									size_hint_y: None
+									height: dp(90)
+									TextInput:
+										hint_text: "Enter asset value"
+										background_color: rgba("#1E293BFF")
+										cursor_color: rgba("#38BDF8FF")
+										paddings: [dp(16), dp(12)]
+										radius: [12,12,12,12]
+										font_size: sp(16)
+										size_hint_y: None
+										height: dp(58)
+										multiline: False
+										write_tab: False
+						Button:
+							text: "Update Net Worth"
+							size_hint_y: None
+							height: dp(44)
+							background_normal: ""
+							background_color: rgba("#0EA5E9FF")
+							color: rgba("#FFFFFF")																
+
+
+
+<SettingsScreen>:
+	name: "settings"
+	initial_balance_input: initial_balance_input
+	BoxLayout:
+		orientation: "vertical"
+		canvas.before:
+			Color:
+				rgba: rgba("#0B1020FF")
+			Rectangle:
+				pos: self.pos
+				size: self.size
+		TopAppBar:
+		Button:
+			size_hint: None, None
+			size: dp(44), dp(44)
+			text: "<-"
+			font_name: "DejaVuSans.ttf"
+			font_size: sp(20)
+			background_normal: ""
+			background_color: 0,0,0,0
+			color: rgba("#E2E8F0FF")
+			on_release: app.root.current = "dashboard"
+		ScrollView:
+			do_scroll_x: False
+			GridLayout:
+				cols:1 
+				size_hint_y: None
+				height: self.minimum_height
+				padding: dp(24)
+				spacing: dp(16)
+				GlassCard:
+					Label:
+						text: "General"
+						size_hint_y: None
+						height: self.texture_size[1]
+						color: rgba("#E0F2FEFF")
+						bold: True
+					GridLayout:
+						cols:2
+						spacing: dp(12)
+						TextInput:
+							id:	initial_balance_input
+							hint_text: "Initial Balance"
+							background_color: rgba("#1E293BFF")
+							foreground_color: rgba("#E2E8F0FF")
+							padding: dp(16)
+							radius: [12,12,12,12]
+						TextInput:
+							id:	"Currency"
+							hint_text: "Initial Balance"
+							background_color: rgba("#1E293BFF")
+							foreground_color: rgba("#E2E8F0FF")
+							padding: dp(16)
+							radius: [12,12,12,12]	
+					Button:
+						text: "save"
+						size_hint: None, None
+						size: dp(160), dp(44)
+						background_color: rgba("#22C55EFF")
+						color: rgba("#FFFFFF")
+						pos_hint: {"center_x":0.5}
+						on_release: root.save_settings()						
+
+
+MoneyTrackerScreenManager:
+	DashboardScreen:
+	TransactionsScreen:
+	CategoryTotalsScreen:
+	SettingsScreen:
+	NetWorthScreen:
