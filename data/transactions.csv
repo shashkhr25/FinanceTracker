@@ -1,2 +1,1 @@
 id,timestamp,tx_type,sub_type,amount,date,description,category,device,location,occasion,effects_balance,linked_tx_id
-b3e59cc910c745a6b50ad9e8881c9677,2025-11-13T12:21:32.118542,expense,regular,89.00,2025-11-13,hb,Food,UPI,,,True,
