@@ -10,6 +10,9 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Dict, Iterable, List, Mapping, MutableMapping, Sequence, Tuple, Any
 
+from storage import read_settings
+
+
 # --- Domain models (Central Data Structure) ---
 
 @dataclass
@@ -40,6 +43,7 @@ DEFAULT_SUB_TYPE = "regular"
 SAVINGS_CATEGORY_LABELS = {
     "savings fd": "Savings FD",
     "savings rd": "Savings RD",
+    "savings gold": "Savings Gold",
     "savings": "Savings",
 }
 
@@ -159,6 +163,23 @@ def compute_balance(transactions: Sequence[Transaction], initial_balance: float)
             balance -= tx.amount
     return round(balance, 2)
 
+def compute_cash_balance(transactions: Sequence[Transaction], initial_cash_balance: float) -> float:
+    """Compute balance from transactions that affect balance."""
+    balance = float(initial_cash_balance)
+    for tx in transactions:
+        if not tx.effects_balance:
+            continue
+        
+        if tx.sub_type in (DEFAULT_CREDIT_CARD_EXPENSE_SUB_TYPE, DEFAULT_CREDIT_CARD_DEBT_SUB_TYPE):
+            continue
+
+        if tx.device == "CASH":
+            if tx.tx_type == "income":
+                balance += tx.amount
+            elif tx.tx_type == "expense":
+                balance -= tx.amount
+    return round(balance, 2)
+
 def compute_outstanding_debt(transactions: Sequence[Transaction]) -> float:
     """Aggregate outstanding debt from credit-card flows."""
     debt_total = 0.0
@@ -176,6 +197,10 @@ def compute_outstanding_debt(transactions: Sequence[Transaction]) -> float:
 def compute_savings_totals(transactions: Sequence[Transaction]) -> Dict[str, float]:
     """Aggregate savings-related expenses by configured categories."""
     totals: Dict[str, float] = {label: 0.0 for label in SAVINGS_CATEGORY_LABELS.values()}
+    
+    settings = read_settings()
+    initial_savings_balance = settings.get("initial_savings_balance", 0.0)
+    totals["savings"] = totals.get("savings", 0.0) + initial_savings_balance
     
     for tx in transactions:
         if tx.tx_type != "expense":

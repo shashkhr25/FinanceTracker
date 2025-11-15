@@ -184,7 +184,7 @@
 			Spinner:
 				id: category_field
 				text: "Food"
-				values: ["Food","Home","Transportation","Personal","Rent","House EMI","Gym","Utilities","Shopping","Petrol","Savings","Subscription/Recharge","Savings RD","Savings FD","Book","Credit Card Bill", "Credit Card UPI Bill", "Others"]
+				values: ["Food","Home","Transportation","Personal","Rent","House EMI","Gym","Utilities","Shopping","Petrol","Subscription/Recharge","Book","Credit Card Bill", "Credit Card UPI Bill", "Savings","Savings RD","Savings FD","Savings Gold","Others"]
 			Label:
 				text: "Device"
 				color: rgba("#E2E8F0FF")
@@ -738,6 +738,7 @@
 
 <NetWorthScreen>:
 	name: "networth"
+	initial_savings_input: savings_manual_screen
 	BoxLayout:
 		orientation: "vertical"
 		canvas.before:
@@ -855,22 +856,9 @@
 									size_hint_y: None
 									height: dp(90)
 									TextInput:
+										id: savings_manual_screen
+										input_filter: "float"
 										hint_text: "Enter Savings amount"
-										background_color: rgba("#1E293BFF")
-										cursor_color: rgba("#38BDF8FF")
-										paddings: [dp(16), dp(12)]
-										radius: [12,12,12,12]
-										font_size: sp(16)
-										size_hint_y: None
-										height: dp(58)
-										multiline: False
-										write_tab: False
-								BoxLayout:
-									orientation: "vertical"
-									size_hint_y: None
-									height: dp(90)
-									TextInput:
-										hint_text: "Enter asset value"
 										background_color: rgba("#1E293BFF")
 										cursor_color: rgba("#38BDF8FF")
 										paddings: [dp(16), dp(12)]
@@ -886,7 +874,8 @@
 							height: dp(44)
 							background_normal: ""
 							background_color: rgba("#0EA5E9FF")
-							color: rgba("#FFFFFF")																
+							color: rgba("#FFFFFF")	
+							on_release: root.save_settings()															
 
 
 

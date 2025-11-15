@@ -53,6 +53,7 @@ def start_new_month_transactionfile(data_dir: Path = DEFAULT_DATA_DIR) -> None:
     last_month_name = last_month_date.strftime("%B")
     if TRANSACTIONS_CSV.exists():
         shutil.copyfile(TRANSACTIONS_CSV , str(OLDER_TRANSACTIONS_CSV) +last_month_name+".csv" )
+        os.remove(TRANSACTIONS_CSV)
 
 def write_settings_json(settings: Mapping[str, object], settings_path: Path) -> None:
     """Persist settings as JSON via atomic write."""

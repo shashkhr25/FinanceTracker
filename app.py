@@ -22,6 +22,7 @@ from storage import append_transaction, ensure_data_dir, read_settings, read_tra
 from logic import (
     CREDIT_CARD_DEVICES,
     compute_balance,
+    compute_cash_balance,
     compute_outstanding_debt,
     compute_savings_totals,
     create_credit_card_expense,
@@ -86,7 +87,7 @@ class AddIncomeDialog(ModalView):
         except (TypeError,ValueError):
             print("Invalid Amount")
             return
-        self.parent_screen.submit_expense(
+        self.parent_screen.submit_income(
             amount=amount,
             description=self.description_input.text.strip(),
             category=self.category_input.text.strip(),
@@ -213,15 +214,18 @@ class DashboardScreen(Screen):
 
         settings = read_settings()
         initial_raw = settings.get("initial_balance",0)
+        initial_cash_raw = settings.get("initial_cash_balance",0)
         try:
             initial_balance = float(initial_raw)
+            initial_cash_balance = float(initial_cash_raw)
         except(TypeError,ValueError):
             initial_balance=0.0
 
         balance_value = compute_balance(transactions, initial_balance=initial_balance)
+        cash_balance_value = compute_cash_balance(transactions, initial_cash_balance=initial_cash_balance)
         debt_value = compute_outstanding_debt(transactions)
         self.current_balance_text = f"{balance_value:,.2f}"
-        self.balance_caption = f"Initial Balance {initial_balance:,.2f}"
+        self.balance_caption = f"Account Balance {(balance_value-cash_balance_value):,.2f} \n" + f"Cash balance: {cash_balance_value:.2f}"
         self.outstanding_debt_text = f"{debt_value:,.2f}"
         if debt_value > 0 :
             self.outstanding_debt_caption = "Credit card debt outstanding"
@@ -274,16 +278,39 @@ class NetWorthScreen(Screen):
     outstanding_debt_text = StringProperty("0.00")
     outstanding_debt_caption = StringProperty("")
     total_savings_text = StringProperty("0.00")
+    initial_savings_input_value = 0.0
     savings_summary = ListProperty([])
 
     def on_pre_enter(self, *_) -> None:
         self.refresh()
+    
+    def populate_settings(self) -> None:
+        settings = read_settings()
+        initial_savings_balance = settings.get("initial_savings_balance", 0.0)
+        self.initial_savings_input_value = initial_savings_balance
+        if self.initial_savings_input:
+            self.initial_savings_input.text = f"{float(initial_savings_balance):.2f}"
+        
+    def save_settings(self) -> None:
+        if not self.initial_savings_input:
+            return
+        text_value = self.initial_savings_input.text.strip()
+        try:
+            initial_savings_balance = float(text_value or 0)
+        except ValueError:
+            print("Invalid initial balance")
+            return
+        settings = dict(read_settings())
+        settings["initial_savings_balance"] = round(initial_savings_balance,2)
+        write_settings(settings)
+        print("Settings saved")
 
     def on_kv_post(self, base_widget) -> None:
         Clock.schedule_once(lambda *_:self.refresh(),0)
 
     def refresh(self) -> None:
         ensure_data_dir()
+        self.populate_settings()
         rows = read_transactions()
         transactions = [transaction_from_row(row) for row in rows]
         settings = read_settings()
@@ -317,7 +344,6 @@ class NetWorthScreen(Screen):
             if amount > 0
         ]
         self.savings_summary = savings_rows
-
 
 
 class CategoryTotalsScreen(Screen):
