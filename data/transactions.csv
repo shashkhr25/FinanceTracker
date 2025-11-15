@@ -11,3 +11,4 @@ bec28bc3a77240c88a015e4208db627c,2025-11-15T08:33:15.596083,income,credit_card_d
 4d7d6bd799464281b542e0c43f982dd3,2025-11-15T08:33:56.395720,income,credit_card_debt,249.00,2025-11-15,"Debt for: Blinkit [ printout, milk, coffee ]",Debt,CREDIT_CARD,,,False,401320b18b3b4cb0ae216740107bb32b
 4439f376efc047389f0ce3f93ee3bb4e,2025-11-15T08:34:16.231238,expense,credit_card_expense,121.26,2025-11-15,Bigbasket [ maggie and roti ],Food,CREDIT_CARD,,,False,e989b29dbc144b49b76f27d246c89a73
 bdf2b95a59e34aaa8a306e6119b9a949,2025-11-15T08:34:16.231297,income,credit_card_debt,121.26,2025-11-15,Debt for: Bigbasket [ maggie and roti ],Debt,CREDIT_CARD,,,False,e989b29dbc144b49b76f27d246c89a73
+68fd6b42c05a4249bb88656c3e9d2e77,2025-11-15T10:27:24.093733,expense,regular,1.00,2025-11-15,test,Food,UPI,,,True,
