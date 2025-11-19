@@ -35,7 +35,7 @@ class Transaction:
 # --- Configuration & Constants ---
 
 ALLOWED_TX_TYPES = {"income", "expense", "transfer"}
-ALLOWED_DEVICES = {"UPI", "CREDIT_CARD", "CREDIT_CARD_UPI", "CASH", "DEBIT", "BANK_TRANSFER", "OTHER"}
+ALLOWED_DEVICES = {"UPI", "CREDIT_CARD", "CREDIT_CARD_UPI", "CASH", "DEBIT", "BANK_TRANSFER", "OTHER", "SAVINGS_WITHDRAW"}
 CREDIT_CARD_DEVICES = {"CREDIT_CARD", "CREDIT_CARD_UPI"}
 DEFAULT_CREDIT_CARD_EXPENSE_SUB_TYPE = "credit_card_expense"
 CREDIT_CARD_PAYMENT_SUB_TYPE = "credit_card_payment"
@@ -223,8 +223,9 @@ def compute_savings_totals(transactions: Sequence[Transaction]) -> Dict[str, flo
             if category_key in SAVINGS_CATEGORY_LABELS:
                 label = SAVINGS_CATEGORY_LABELS[category_key]
                 totals[label] = totals.get(label, 0.0) + tx.amount
-        elif tx.tx_type == "income" and category_key in SAVINGS_WITHDRAW_CATEGORY_KEYS:
-            totals["savings"] = totals.get("savings", 0.0) - tx.amount
+        elif tx.tx_type == "income":
+            if category_key in SAVINGS_WITHDRAW_CATEGORY_KEYS or tx.device == "SAVINGS_WITHDRAW":
+                totals["savings"] = totals.get("savings", 0.0) - tx.amount
             
     return {label: round(amount, 2) for label, amount in totals.items()}
     

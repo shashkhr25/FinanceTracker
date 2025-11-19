@@ -247,7 +247,6 @@
 	parent_screen: None
 	amount_input: amount_field
 	description_input: description_field
-	category_input: category_field
 	device_spinner: device_spinner
 	BoxLayout:
 		orientation: "vertical"
@@ -343,7 +342,6 @@
 	parent_screen: None
 	amount_input: amount_field
 	description_input: description_field
-	category_input: category_field
 	device_spinner: device_spinner
 	BoxLayout:
 		orientation: "vertical"
@@ -396,21 +394,6 @@
 				padding: dp(12)
 				radius: [12,12,12,12]
 				multiline: False
-				on_text_validate: category_field.focus = True
-			Label:
-				text: "Category"
-				color: rgba("#E2E8F0FF")
-				size_hint_y: None
-				height: dp(32)
-			Spinner:
-				id: category_field
-				text: "Salary"
-				values: ["Salary", "Bonus", "Other", "Taken from Savings", "Refund"]
-				background_normal: ""
-				background_color: rgba("#1E293BFF")
-				color: rgba("#E2E8F0FF")
-				size_hint_y: None
-				height: dp(40)
 			Label:
 				text: "Device"
 				color: rgba("#E2E8F0FF")
@@ -419,7 +402,7 @@
 			Spinner:
 				id: device_spinner
 				text: "Paycheck"
-				values: ["Paycheck", "Home", "Personal split paid", "Others"]
+				values: ["Paycheck", "Home", "Personal split paid", "Refund", "Savings Withdraw", "Taken from Savings", "Others"]
 		BoxLayout:
 			size_hint_y: None
 			height: dp(52)
@@ -1010,10 +993,10 @@
 							padding: dp(16)
 							radius: [12,12,12,12]
 							multiline: False
-					BoxLayout:
-						spacing: dp(12)
+					AnchorLayout:
 						size_hint_y: None
 						height: dp(44)
+						anchor_x: "center"
 						Button:
 							text: "Save"
 							size_hint: None, None
@@ -1021,34 +1004,35 @@
 							background_color: rgba("#22C55EFF")
 							color: rgba("#FFFFFF")
 							on_release: root.save_settings()
-						Button:
-							text: "Edit Initial Savings"
-							size_hint: None, None
-							size: dp(200), dp(44)
-							background_color: rgba("#38BDF8FF")
-							color: rgba("#FFFFFF")
-							on_release: root.open_initial_savings_dialog()
-	
+		
 		GridLayout:
-			cols:1
+			cols:3
 			spacing: dp(12)
 			padding: dp(20)
 			Button:
 				text: "Start New Month"
-				size_hint: None, None
-				size: dp(160), dp(44)
-				background_color: rgba("#71ce92ff")
-				color: rgba("#FFFFFF")
-				pos_hint: {"center_x":0.5}
+				size_hint_y: None
+				height: dp(44)
+				background_normal: ""
+				background_color: rgba("#34D399FF")
+				color: rgba("#0F172AFF")
 				on_release: root.start_new_month()
 			Button:
 				text: "Clear Outstanding Debt"
-				size_hint: None, None
-				size: dp(200), dp(44)
-				background_color: rgba("#F97316FF")
+				size_hint_y: None
+				height: dp(44)
+				background_normal: ""
+				background_color: rgba("#F87171FF")
 				color: rgba("#FFFFFF")
-				pos_hint: {"center_x":0.5}
 				on_release: root.clear_outstanding_debt()
+			Button:
+				text: "Edit Initial Savings"
+				size_hint_y: None
+				height: dp(44)
+				background_normal: ""
+				background_color: rgba("#60A5FAFF")
+				color: rgba("#0F172AFF")
+				on_release: root.open_initial_savings_dialog()
 		
 
 MoneyTrackerScreenManager:

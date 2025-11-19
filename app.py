@@ -132,7 +132,6 @@ class AddIncomeDialog(ModalView):
     parent_screen = ObjectProperty(None)
     amount_input=ObjectProperty(None)
     description_input = ObjectProperty(None)
-    category_input = ObjectProperty(None)
     device_spinner = ObjectProperty(None)
 
     def handle_submit(self) -> None:
@@ -143,13 +142,22 @@ class AddIncomeDialog(ModalView):
         except (TypeError,ValueError):
             print("Invalid Amount")
             return
+
+        category_text = ""
+        device_text_raw = (self.device_spinner.text or "").strip()
+        device_code = device_text_raw
+        if device_text_raw.lower() == "savings withdraw" or device_text_raw.lower() == "taken from savings":
+            device_code = "SAVINGS_WITHDRAW"
+            category_text = "Taken from Savings"
+
         self.parent_screen.submit_income(
             amount=amount,
             description=self.description_input.text.strip(),
-            category=self.category_input.text.strip(),
-            device=self.device_spinner.text.strip()
+            category=category_text,
+            device=device_code
         )
         self.dismiss()
+
 
 class DashboardScreen(Screen):
    
