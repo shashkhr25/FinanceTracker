@@ -190,6 +190,14 @@ class AddIncomeDialog(ModalView):
     description_input = ObjectProperty(None)
     device_spinner = ObjectProperty(None)
     date_input = ObjectProperty(None)
+    shared_checkbox = ObjectProperty(None)
+    shared_participants_input = ObjectProperty(None)
+    shared_notes_input = ObjectProperty(None)
+
+    @staticmethod
+    def _parse_shared_entries(raw_text: str) -> List[SharedSplit]:
+        # Reuse same parsing rules as expenses
+        return AddExpenseDialog._parse_shared_entries(raw_text)
 
     def handle_submit(self) -> None:
         if not self.parent_screen:
@@ -209,12 +217,20 @@ class AddIncomeDialog(ModalView):
 
         txn_date = _parse_date_or_today(self.date_input.text if self.date_input else "")
 
+        shared_flag = bool(self.shared_checkbox.active) if self.shared_checkbox else False
+        participants_text = self.shared_participants_input.text if self.shared_participants_input else ""
+        shared_splits = self._parse_shared_entries(participants_text) if shared_flag else []
+        shared_notes = self.shared_notes_input.text.strip() if (self.shared_notes_input and shared_flag) else ""
+
         self.parent_screen.submit_income(
             amount=amount,
             description=self.description_input.text.strip(),
             category=category_text,
             device=device_code,
-            txn_date=txn_date
+            txn_date=txn_date,
+            shared_flag=shared_flag,
+            shared_splits=shared_splits,
+            shared_notes=shared_notes,
         )
         self.dismiss()
 
@@ -334,14 +350,28 @@ class DashboardScreen(Screen):
                     networth_screen.refresh()
 
 
-    def submit_income(self, *, amount:float, description:str, category: str, device: str, txn_date: date | None = None) -> None:
+    def submit_income(
+        self,
+        *,
+        amount: float,
+        description: str,
+        category: str,
+        device: str,
+        txn_date: date | None = None,
+        shared_flag: bool = False,
+        shared_splits: Sequence[SharedSplit] | None = None,
+        shared_notes: str = "",
+    ) -> None:
         txn_date = txn_date or date.today()
         transaction = create_income_transaction(
             amount=amount,
             date_value=txn_date,
             description=description,
             category=category,
-            device=device
+            device=device,
+            shared_flag=shared_flag,
+            shared_splits=shared_splits,
+            shared_notes=shared_notes,
         )
         ok,errors = validate_transaction(transaction)
         if not ok :
@@ -400,6 +430,9 @@ class DashboardScreen(Screen):
 class TransactionsScreen(Screen):
     rv = ObjectProperty(None)
     empty_label = ObjectProperty(None)
+    filter_text_input = ObjectProperty(None)
+    filter_device_input = ObjectProperty(None)
+    filter_category_input = ObjectProperty(None)
 
     def on_pre_enter(self, *_) -> None:
         self.refresh()
@@ -409,6 +442,32 @@ class TransactionsScreen(Screen):
         rows = read_transactions()
         transactions = [transaction_from_row(row) for row in rows]
         transactions.sort(key=lambda tx: tx.timestamp, reverse = True)
+
+        text_filter = (self.filter_text_input.text or "").strip().lower() if self.filter_text_input else ""
+        device_filter = (self.filter_device_input.text or "").strip().lower() if self.filter_device_input else ""
+        category_filter = (self.filter_category_input.text or "").strip().lower() if self.filter_category_input else ""
+
+        def _matches_filters(tx) -> bool:
+            if text_filter:
+                haystack = " ".join(
+                    [
+                        tx.description or "",
+                        tx.category or "",
+                        tx.device or "",
+                    ]
+                ).lower()
+                if text_filter not in haystack:
+                    return False
+            if device_filter:
+                if not (tx.device or "").lower().startswith(device_filter):
+                    return False
+            if category_filter:
+                if not (tx.category or "").lower().startswith(category_filter):
+                    return False
+            return True
+
+        if text_filter or device_filter or category_filter:
+            transactions = [tx for tx in transactions if _matches_filters(tx)]
 
         data = []
         for tx in transactions:
@@ -435,6 +494,15 @@ class TransactionsScreen(Screen):
             else:
                 self.empty_label.opacity = 1
                 self.empty_label.height = dp(32)
+
+    def clear_filters(self) -> None:
+        if self.filter_text_input:
+            self.filter_text_input.text = ""
+        if self.filter_device_input:
+            self.filter_device_input.text = ""
+        if self.filter_category_input:
+            self.filter_category_input.text = ""
+        self.refresh()
 
     @staticmethod
     def _format_shared_text(tx) -> str:
@@ -516,12 +584,11 @@ class NetWorthScreen(Screen):
         self.total_savings_text = f"{total_savings:,.2f}"
         savings_rows = [
             {
-                "label_text" : label,
-                "amount_text" : f"{amount:,.2f}",
-                "amount_color" : "0EA5E9FF"
+                "label_text": label,
+                "amount_text": f"{amount:,.2f}",
+                "amount_color": "0EA5E9FF",
             }
-            for label,amount in savings_total.items()
-            if amount > 0
+            for label, amount in savings_total.items()
         ]
         self.savings_summary = savings_rows
 
@@ -577,6 +644,10 @@ class SharedExpensesScreen(Screen):
     detail_data = ListProperty([])
     participant_input = ObjectProperty(None)
     category_input = ObjectProperty(None)
+    total_shared_text = StringProperty("0.00")
+    summary_caption = StringProperty("No participants yet")
+    detail_caption = StringProperty("No shared transactions yet")
+    filters_caption = StringProperty("All participants • All categories")
 
     def on_pre_enter(self, *_) -> None:
         self.refresh()
@@ -592,27 +663,54 @@ class SharedExpensesScreen(Screen):
             participant_filter=participant or None,
             category_filter=category or None,
         )
+        sorted_summary = sorted(summary.items(), key=lambda item: item[1], reverse=True)
         self.summary_data = [
             {
                 "label_text": name,
                 "amount_text": f"{value:,.2f}",
             }
-            for name, value in summary.items()
+            for name, value in sorted_summary
         ]
-        self.detail_data = [
-            {
-                "date_text": tx.date.strftime("%d %b %Y"),
-                "category_text": tx.category or "Uncategorised",
-                "amount_text": f"{tx.amount:,.2f}",
-                "participants_text": ", ".join(
-                    f"{name} ({amt:,.2f})" for name, amt in allocations.items()
-                ),
-                "notes_text": tx.shared_notes or "",
-            }
-            for tx, allocations in details
-        ]
+        total_shared = sum(summary.values())
+        self.total_shared_text = f"{total_shared:,.2f}"
+        self.summary_caption = self._format_summary_caption(len(summary))
+        self.detail_caption = self._format_detail_caption(len(details))
+        self.filters_caption = self._format_filters_caption(participant, category)
+
+        participant_lookup = participant.lower() if participant else ""
+        detail_rows = []
+        for tx, allocations in details:
+            participants_text = " • ".join(
+                f"{name} ({amount:,.2f})" for name, amount in sorted(allocations.items())
+            )
+            share_text = ""
+            if participant_lookup:
+                for name, amount in allocations.items():
+                    if name.lower() == participant_lookup:
+                        share_text = f"Your share: {amount:,.2f}"
+                        break
+
+            detail_rows.append(
+                {
+                    "date_text": tx.date.strftime("%d %b %Y"),
+                    "category_text": tx.category or "Uncategorised",
+                    "description_text": tx.description or tx.sub_type.replace("_", " ").title(),
+                    "amount_text": f"{tx.amount:,.2f}",
+                    "participants_text": participants_text or "No participants recorded",
+                    "notes_text": tx.shared_notes or "",
+                    "share_text": share_text,
+                }
+            )
+        self.detail_data = detail_rows
 
     def handle_filter_change(self) -> None:
+        self.refresh()
+
+    def clear_filters(self) -> None:
+        if self.participant_input:
+            self.participant_input.text = ""
+        if self.category_input:
+            self.category_input.text = ""
         self.refresh()
 
 
@@ -637,6 +735,26 @@ class SharedExpensesScreen(Screen):
         settings["category_budgets"] = budgets
         write_settings(settings)
         self.refresh()
+
+    @staticmethod
+    def _format_filters_caption(participant: str, category: str) -> str:
+        participant_label = participant or "All participants"
+        category_label = category or "All categories"
+        return f"{participant_label} • {category_label}"
+
+    @staticmethod
+    def _format_summary_caption(count: int) -> str:
+        if count <= 0:
+            return "0 participants"
+        suffix = "participant" if count == 1 else "participants"
+        return f"{count} {suffix}"
+
+    @staticmethod
+    def _format_detail_caption(count: int) -> str:
+        if count <= 0:
+            return "0 shared transactions"
+        suffix = "transaction" if count == 1 else "transactions"
+        return f"{count} shared {suffix}"
 
 
 class SettingsScreen(Screen):

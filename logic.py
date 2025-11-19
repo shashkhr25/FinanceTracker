@@ -373,6 +373,10 @@ def summarize_shared_expenses(
         if not tx.shared_flag:
             continue
 
+        # Only consider meaningful shared flows
+        if tx.tx_type not in ("expense", "income"):
+            continue
+
         category_name = (tx.category or "").strip().lower()
         if category_key and category_name != category_key:
             continue
@@ -381,20 +385,29 @@ def summarize_shared_expenses(
         if not allocations:
             continue
 
+        # Expenses add to what people owe; income (refunds) reduce it
+        sign = 1.0 if tx.tx_type == "expense" else -1.0
+
         if participant_key:
             name_map = {name.lower(): name for name in allocations}
             if participant_key not in name_map:
                 continue
-            filtered_allocations = {name_map[participant_key]: allocations[name_map[participant_key]]}
+            original_name = name_map[participant_key]
+            filtered_allocations = {original_name: allocations[original_name]}
         else:
             filtered_allocations = allocations
 
         details.append((tx, allocations))
 
         for name, amount in filtered_allocations.items():
-            summary[name] = round(summary.get(name, 0.0) + amount, 2)
+            summary[name] = round(summary.get(name, 0.0) + sign * amount, 2)
 
-    return summary, details
+    # Drop near-zero entries so fully repaid people disappear
+    cleaned_summary = {
+        name: value for name, value in summary.items() if abs(value) >= 0.005
+    }
+
+    return cleaned_summary, details
 
 
 def create_credit_card_expense(
@@ -524,13 +537,18 @@ def create_income_transaction(
     occasion: str = "",
     sub_type: str = DEFAULT_SUB_TYPE,
     effects_balance: bool = True,
+    shared_flag: bool = False,
+    shared_splits: Optional[Sequence[SharedSplit]] = None,
+    shared_notes: str = "",
     ) -> Transaction:
-    """Convenience helper for income transactions."""
+    """Convenience helper for income transactions (including shared refunds)."""
 
     normalized_amount = normalize_amount(amount)
     cleaned_device = device.upper() if device else "OTHER"
     if cleaned_device not in ALLOWED_DEVICES:
         cleaned_device = "OTHER"
+
+    splits_tuple: Tuple[SharedSplit, ...] = tuple(shared_splits or ())
 
     return Transaction(
         id=new_transaction_id(),
@@ -546,6 +564,9 @@ def create_income_transaction(
         occasion=occasion,
         effects_balance=effects_balance,
         linked_tx_id="",
+        shared_flag=shared_flag and bool(splits_tuple),
+        shared_splits=splits_tuple,
+        shared_notes=shared_notes if shared_flag and splits_tuple else "",
     )
     
 def link_transactions(parent: Transaction, child: Transaction) -> Tuple[Transaction, Transaction]:
