@@ -605,6 +605,18 @@
 						AnchorLayout:
 							anchor_x: "left"
 							anchor_y: "center"
+							Button:
+								size_hint: None, None
+								size: dp(36), dp(36)
+								background_normal: ""
+								background_color: rgba("#4B5563FF")
+								color: rgba("#FFFFFF")
+								text: "✕"
+								font_size: sp(14)
+								on_release: app.root.get_screen("dashboard").clear_outstanding_debt()
+						AnchorLayout:
+							anchor_x: "left"
+							anchor_y: "center"
 							AccentButton:
 								text: "Add expense"
 								background_color: rgba("#EF5250FF")

@@ -38,8 +38,10 @@ ALLOWED_TX_TYPES = {"income", "expense", "transfer"}
 ALLOWED_DEVICES = {"UPI", "CREDIT_CARD", "CREDIT_CARD_UPI", "CASH", "DEBIT", "BANK_TRANSFER", "OTHER"}
 CREDIT_CARD_DEVICES = {"CREDIT_CARD", "CREDIT_CARD_UPI"}
 DEFAULT_CREDIT_CARD_EXPENSE_SUB_TYPE = "credit_card_expense"
+CREDIT_CARD_PAYMENT_SUB_TYPE = "credit_card_payment"
 DEFAULT_CREDIT_CARD_DEBT_SUB_TYPE = "credit_card_debt"
 DEFAULT_SUB_TYPE = "regular"
+CREDIT_CARD_PAYMENT_CATEGORY_KEYS = {"credit card bill", "credit card upi bill"}
 SAVINGS_CATEGORY_LABELS = {
     "savings fd": "Savings FD",
     "savings rd": "Savings RD",
@@ -190,7 +192,7 @@ def compute_outstanding_debt(transactions: Sequence[Transaction]) -> float:
             elif tx.tx_type == "expense":
                 debt_total -= tx.amount
         
-        elif tx.sub_type == "credit_card_payment" and tx.tx_type == "expense":
+        elif tx.sub_type == CREDIT_CARD_PAYMENT_SUB_TYPE and tx.tx_type == "expense":
             debt_total -= tx.amount
     return round(max(debt_total,0.0), 2)
 
@@ -279,6 +281,30 @@ def create_credit_card_expense(
     return link_transactions(expense_tx, debt_tx)
 
 
+def create_credit_card_payment(
+    amount: float,
+    date_value: date,
+    description: str,
+    category: str,
+    device: str,
+    location: str = "",
+    occasion: str = "",
+) -> Transaction:
+    """Return transaction representing payment of credit-card bill."""
+
+    return create_expense_transaction(
+        amount=amount,
+        date_value=date_value,
+        description=description,
+        category=category,
+        device=device,
+        location=location,
+        occasion=occasion,
+        sub_type=CREDIT_CARD_PAYMENT_SUB_TYPE,
+        effects_balance=True,
+    )
+
+
 def create_expense_transaction(
     amount: float,
     date_value: date,
@@ -354,6 +380,43 @@ def link_transactions(parent: Transaction, child: Transaction) -> Tuple[Transact
     child.linked_tx_id = link_id
     return parent, child
 
-def create_credit_card_payment(amount: float, **metadata: Any) -> Transaction:
+def create_credit_card_payment(
+    amount: float,
+    date_value: date,
+    description: str,
+    category: str,
+    device: str,
+    location: str = "",
+    occasion: str = "",
+) -> Transaction:
     """Return transaction representing payment of credit-card bill."""
-    raise NotImplementedError
+
+    return create_expense_transaction(
+        amount=amount,
+        date_value=date_value,
+        description=description,
+        category=category,
+        device=device,
+        location=location,
+        occasion=occasion,
+        sub_type=CREDIT_CARD_PAYMENT_SUB_TYPE,
+        effects_balance=True,
+    )
+
+def create_debt_clearance_transaction(
+    amount: float,
+    date_value: date,
+    description: str = "Debt cleared",
+    device: str = "BANK_TRANSFER",
+) -> Transaction:
+    """Return an expense entry that zeros out outstanding debt."""
+
+    return create_expense_transaction(
+        amount=amount,
+        date_value=date_value,
+        description=description,
+        category="Debt",
+        device=device,
+        sub_type=DEFAULT_CREDIT_CARD_DEBT_SUB_TYPE,
+        effects_balance=False,
+    )

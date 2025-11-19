@@ -21,11 +21,14 @@ from kivy.factory import Factory
 from storage import append_transaction, ensure_data_dir, read_settings, read_transactions, write_settings, start_new_month_transactionfile
 from logic import (
     CREDIT_CARD_DEVICES,
+    CREDIT_CARD_PAYMENT_CATEGORY_KEYS,
     compute_balance,
     compute_cash_balance,
     compute_outstanding_debt,
     compute_savings_totals,
     create_credit_card_expense,
+    create_credit_card_payment,
+    create_debt_clearance_transaction,
     create_expense_transaction,
     create_income_transaction,
     summarize_by_category,
@@ -120,9 +123,20 @@ class DashboardScreen(Screen):
 
     def submit_expense(self, *, amount:float, description: str, category: str, device: str) -> None:
         cleaned_device = device.strip().upper() if device else ""
+        normalized_category = (category or "").strip().lower()
 
         transactions = []
-        if cleaned_device in CREDIT_CARD_DEVICES:
+        if normalized_category in CREDIT_CARD_PAYMENT_CATEGORY_KEYS:
+            transactions.append(
+                create_credit_card_payment(
+                    amount=amount,
+                    date_value=date.today(),
+                    description=description,
+                    category=category,
+                    device=cleaned_device or "BANK_TRANSFER",
+                )
+            )
+        elif cleaned_device in CREDIT_CARD_DEVICES:
             expense_tx, debt_tx = create_credit_card_expense(
                 amount = amount,
                 date_value=date.today(),
@@ -170,6 +184,44 @@ class DashboardScreen(Screen):
                 category_screen = self.manager.get_screen("category_totals")
                 if hasattr(category_screen, "refresh"):
                     category_screen.refresh()
+
+            if "networth" in self.manager.screen_names:
+                networth_screen = self.manager.get_screen("networth")
+                if hasattr(networth_screen, "refresh"):
+                    networth_screen.refresh()
+
+    def clear_outstanding_debt(self) -> None:
+        ensure_data_dir()
+        rows = read_transactions()
+        transactions = [transaction_from_row(row) for row in rows]
+        debt_value = compute_outstanding_debt(transactions)
+
+        if debt_value <= 0:
+            print("No outstanding debt to clear")
+            return
+
+        clearance_tx = create_debt_clearance_transaction(
+            amount=debt_value,
+            date_value=date.today(),
+            description="Debt cleared via dashboard",
+        )
+
+        ok, errors = validate_transaction(clearance_tx)
+        if not ok:
+            for err in errors:
+                print(f"Validation error: {err}")
+            return
+
+        append_transaction(transaction_to_row(clearance_tx))
+        print("Outstanding debt cleared")
+
+        self.refresh_metrics()
+
+        if self.manager:
+            if "transactions" in self.manager.screen_names:
+                transactions_screen = self.manager.get_screen("transactions")
+                if hasattr(transactions_screen, "refresh"):
+                    transactions_screen.refresh()
 
             if "networth" in self.manager.screen_names:
                 networth_screen = self.manager.get_screen("networth")
