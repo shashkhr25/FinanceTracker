@@ -49,6 +49,12 @@ SAVINGS_CATEGORY_LABELS = {
     "savings gold": "Savings Gold",
     "savings": "Savings",
 }
+SAVINGS_INITIAL_SETTING_KEYS = {
+    "Savings": "initial_savings_balance",
+    "Savings FD": "initial_savings_fd_balance",
+    "Savings RD": "initial_savings_rd_balance",
+    "Savings Gold": "initial_savings_gold_balance",
+}
 
 # --- Utility Functions ---
 
@@ -202,8 +208,13 @@ def compute_savings_totals(transactions: Sequence[Transaction]) -> Dict[str, flo
     totals: Dict[str, float] = {label: 0.0 for label in SAVINGS_CATEGORY_LABELS.values()}
     
     settings = read_settings()
-    initial_savings_balance = settings.get("initial_savings_balance", 0.0)
-    totals["savings"] = totals.get("savings", 0.0) + initial_savings_balance
+    for label, setting_key in SAVINGS_INITIAL_SETTING_KEYS.items():
+        initial_value_raw = settings.get(setting_key, 0.0)
+        try:
+            initial_value = float(initial_value_raw)
+        except (TypeError, ValueError):
+            initial_value = 0.0
+        totals[label] = totals.get(label, 0.0) + initial_value
     
     for tx in transactions:
         category_key = (tx.category or "").strip().lower()

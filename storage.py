@@ -68,7 +68,15 @@ def read_settings(settings_path: Path = SETTINGS_JSON) -> Mapping[str, Any]:
     ensure_data_dir(settings_path.parent)
 
     if not settings_path.exists():
-        return {"initial_balance": 0.0, "initial_cash_balance": 0.0, "category_budgets": {}}
+        return {
+            "initial_balance": 0.0,
+            "initial_cash_balance": 0.0,
+            "initial_savings_balance": 0.0,
+            "initial_savings_fd_balance": 0.0,
+            "initial_savings_rd_balance": 0.0,
+            "initial_savings_gold_balance": 0.0,
+            "category_budgets": {},
+        }
 
     with settings_path.open("r", encoding="utf-8") as handle:
         try:
@@ -77,6 +85,14 @@ def read_settings(settings_path: Path = SETTINGS_JSON) -> Mapping[str, Any]:
                 data["initial_balance"] = data.get("initial balance", 0.0)
             if "initial_cash_balance" not in data:
                 data["initial_cash_balance"] = 0.0
+            if "initial_savings_balance" not in data:
+                data["initial_savings_balance"] = 0.0
+            if "initial_savings_fd_balance" not in data:
+                data["initial_savings_fd_balance"] = 0.0
+            if "initial_savings_rd_balance" not in data:
+                data["initial_savings_rd_balance"] = 0.0
+            if "initial_savings_gold_balance" not in data:
+                data["initial_savings_gold_balance"] = 0.0
             if "category_budgets" not in data or not isinstance(data["category_budgets"], dict):
                 data["category_budgets"] = {}
             # Clean legacy key
@@ -84,7 +100,15 @@ def read_settings(settings_path: Path = SETTINGS_JSON) -> Mapping[str, Any]:
                 data.pop("initial balance", None)
             return data
         except json.JSONDecodeError:
-            return {"initial_balance": 0.0, "initial_cash_balance": 0.0, "category_budgets": {}}
+            return {
+                "initial_balance": 0.0,
+                "initial_cash_balance": 0.0,
+                "initial_savings_balance": 0.0,
+                "initial_savings_fd_balance": 0.0,
+                "initial_savings_rd_balance": 0.0,
+                "initial_savings_gold_balance": 0.0,
+                "category_budgets": {},
+            }
 
 
 def write_settings(settings: Mapping[str, object], settings_path: Path = SETTINGS_JSON) -> None:

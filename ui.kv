@@ -1,3 +1,127 @@
+
+<SavingsInitialDialog@ModalView>:
+	size_hint: None, None
+	size: dp(320), dp(420)
+	auto_dismiss: False
+	background_color: 0,0,0,0.4
+	parent_screen: None
+	savings_input: savings_input
+	savings_fd_input: savings_fd_input
+	savings_rd_input: savings_rd_input
+	savings_gold_input: savings_gold_input
+	BoxLayout:
+		orientation: "vertical"
+		padding: dp(24)
+		spacing: dp(16)
+		canvas.before:
+			Color:
+				rgba: rgba("#10172AFF")
+			RoundedRectangle:
+				pos: self.pos
+				size: self.size
+				radius: [18,18,18,18]
+		Label:
+			text: "Initial Savings"
+			font_size: sp(20)
+			color: rgba("#FFFFFF")
+			bold: True
+			size_hint_y: None
+			height: self.texture_size[1]
+		GridLayout:
+			cols:2
+			spacing: dp(10)
+			size_hint_y: None
+			height: dp(220)
+			row_default_height: dp(48)
+			row_force_default: True
+			Label:
+				text: "Savings"
+				color: rgba("#E2E8F0FF")
+				font_size: sp(14)
+				valign: "middle"
+				text_size: self.size
+			TextInput:
+				id: savings_input
+				input_filter: "float"
+				background_color: rgba("#1E293BFF")
+				foreground_color: rgba("#E2E8F0FF")
+				cursor_color: rgba("#38BDF8FF")
+				padding: [dp(12), dp(10)]
+				radius: [12,12,12,12]
+				size_hint_y: None
+				height: dp(44)
+				multiline: False
+				write_tab: False
+			Label:
+				text: "Savings FD"
+				color: rgba("#E2E8F0FF")
+				font_size: sp(14)
+				valign: "middle"
+				text_size: self.size
+			TextInput:
+				id: savings_fd_input
+				input_filter: "float"
+				background_color: rgba("#1E293BFF")
+				foreground_color: rgba("#E2E8F0FF")
+				cursor_color: rgba("#38BDF8FF")
+				padding: [dp(12), dp(10)]
+				radius: [12,12,12,12]
+				size_hint_y: None
+				height: dp(44)
+				multiline: False
+				write_tab: False
+			Label:
+				text: "Savings RD"
+				color: rgba("#E2E8F0FF")
+				font_size: sp(14)
+				valign: "middle"
+				text_size: self.size
+			TextInput:
+				id: savings_rd_input
+				input_filter: "float"
+				background_color: rgba("#1E293BFF")
+				foreground_color: rgba("#E2E8F0FF")
+				cursor_color: rgba("#38BDF8FF")
+				padding: [dp(12), dp(10)]
+				radius: [12,12,12,12]
+				size_hint_y: None
+				height: dp(44)
+				multiline: False
+				write_tab: False
+			Label:
+				text: "Savings Gold"
+				color: rgba("#E2E8F0FF")
+				font_size: sp(14)
+				valign: "middle"
+				text_size: self.size
+			TextInput:
+				id: savings_gold_input
+				input_filter: "float"
+				background_color: rgba("#1E293BFF")
+				foreground_color: rgba("#E2E8F0FF")
+				cursor_color: rgba("#38BDF8FF")
+				padding: [dp(12), dp(10)]
+				radius: [12,12,12,12]
+				size_hint_y: None
+				height: dp(44)
+				multiline: False
+				write_tab: False
+		BoxLayout:
+			size_hint_y: None
+			height: dp(52)
+			spacing: dp(12)
+			Button:
+				text: "Cancel"
+				background_normal: ""
+				background_color: rgba("#4B5563FF")
+				color: rgba("#FFFFFF")
+				on_release: root.dismiss()
+			Button:
+				text: "Save"
+				background_normal: ""
+				background_color: rgba("#22C55EFF")
+				color: rgba("#FFFFFF")
+				on_release: root.handle_save()
 #:import rgba kivy.utils.get_color_from_hex
 #:import dp kivy.metrics.dp
 #:import sp kivy.metrics.sp
@@ -738,7 +862,6 @@
 
 <NetWorthScreen>:
 	name: "networth"
-	initial_savings_input: savings_manual_screen
 	BoxLayout:
 		orientation: "vertical"
 		canvas.before:
@@ -829,55 +952,6 @@
 								height: self.minimum_height
 								orientation: "vertical"
 								spacing: dp(8)
-					GlassCard:
-						size_hint_x : 0.45
-						size_hint_y: None
-						height: dp(260)
-						padding: dp(14)
-						spacing: dp(12)
-						Label:
-							text: "Manual Inputs"
-							size_hint_y: None
-							height: dp(22)
-							color: rgba("#E0F2FEFF")
-							bold:True	
-						ScrollView:
-							do_scroll_x: False
-							do_scroll_y: False
-							size_hint_y:1
-							bar_width: dp(4)
-							GridLayout:
-								cols:1
-								size_hint_y: None
-								height: self.minimum_height
-								spacing: dp(16)
-								BoxLayout:
-									orientation: "vertical"
-									size_hint_y: None
-									height: dp(90)
-									TextInput:
-										id: savings_manual_screen
-										input_filter: "float"
-										hint_text: "Enter Savings amount"
-										background_color: rgba("#1E293BFF")
-										cursor_color: rgba("#38BDF8FF")
-										paddings: [dp(16), dp(12)]
-										radius: [12,12,12,12]
-										font_size: sp(16)
-										size_hint_y: None
-										height: dp(58)
-										multiline: False
-										write_tab: False
-						Button:
-							text: "Update Net Worth"
-							size_hint_y: None
-							height: dp(44)
-							background_normal: ""
-							background_color: rgba("#0EA5E9FF")
-							color: rgba("#FFFFFF")	
-							on_release: root.save_settings()															
-
-
 
 <SettingsScreen>:
 	name: "settings"
@@ -936,14 +1010,25 @@
 							padding: dp(16)
 							radius: [12,12,12,12]
 							multiline: False
-					Button:
-						text: "save"
-						size_hint: None, None
-						size: dp(160), dp(44)
-						background_color: rgba("#22C55EFF")
-						color: rgba("#FFFFFF")
-						pos_hint: {"center_x":0.5}
-						on_release: root.save_settings()		
+					BoxLayout:
+						spacing: dp(12)
+						size_hint_y: None
+						height: dp(44)
+						Button:
+							text: "Save"
+							size_hint: None, None
+							size: dp(160), dp(44)
+							background_color: rgba("#22C55EFF")
+							color: rgba("#FFFFFF")
+							on_release: root.save_settings()
+						Button:
+							text: "Edit Initial Savings"
+							size_hint: None, None
+							size: dp(200), dp(44)
+							background_color: rgba("#38BDF8FF")
+							color: rgba("#FFFFFF")
+							on_release: root.open_initial_savings_dialog()
+	
 		GridLayout:
 			cols:1
 			spacing: dp(12)

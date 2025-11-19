@@ -69,6 +69,59 @@ class AddExpenseDialog(ModalView):
         self.dismiss()
 
 
+class SavingsInitialDialog(ModalView):
+    """Dialog to edit initial savings balances by category."""
+
+    parent_screen = ObjectProperty(None)
+    savings_input = ObjectProperty(None)
+    savings_fd_input = ObjectProperty(None)
+    savings_rd_input = ObjectProperty(None)
+    savings_gold_input = ObjectProperty(None)
+
+    def populate_from_settings(self) -> None:
+        settings = read_settings()
+        fields = [
+            (self.savings_input, "initial_savings_balance"),
+            (self.savings_fd_input, "initial_savings_fd_balance"),
+            (self.savings_rd_input, "initial_savings_rd_balance"),
+            (self.savings_gold_input, "initial_savings_gold_balance"),
+        ]
+        for widget, key in fields:
+            if widget is None:
+                continue
+            try:
+                value = float(settings.get(key, 0.0))
+            except (TypeError, ValueError):
+                value = 0.0
+            widget.text = f"{value:.2f}"
+
+    def handle_save(self) -> None:
+        settings = dict(read_settings())
+        fields = [
+            (self.savings_input, "initial_savings_balance"),
+            (self.savings_fd_input, "initial_savings_fd_balance"),
+            (self.savings_rd_input, "initial_savings_rd_balance"),
+            (self.savings_gold_input, "initial_savings_gold_balance"),
+        ]
+
+        for widget, key in fields:
+            text_value = widget.text.strip() if widget else ""
+            try:
+                amount = float(text_value or 0.0)
+            except ValueError:
+                print(f"Invalid value for {key}")
+                return
+            settings[key] = round(amount, 2)
+
+        write_settings(settings)
+        print("Savings balances updated")
+
+        if self.parent_screen:
+            self.parent_screen.refresh()
+
+        self.dismiss()
+
+
 class ThemedSpinnerDropdown(DropDown):
     """ Custom dropdown used to style spinners consistently"""
 Factory.register("ThemedSpinnerDropdown",cls=ThemedSpinnerDropdown)
@@ -292,32 +345,29 @@ class NetWorthScreen(Screen):
     outstanding_debt_text = StringProperty("0.00")
     outstanding_debt_caption = StringProperty("")
     total_savings_text = StringProperty("0.00")
-    initial_savings_input_value = 0.0
     savings_summary = ListProperty([])
+    savings_display = StringProperty("0.00")
+    savings_fd_display = StringProperty("0.00")
+    savings_rd_display = StringProperty("0.00")
+    savings_gold_display = StringProperty("0.00")
 
     def on_pre_enter(self, *_) -> None:
         self.refresh()
     
     def populate_settings(self) -> None:
         settings = read_settings()
-        initial_savings_balance = settings.get("initial_savings_balance", 0.0)
-        self.initial_savings_input_value = initial_savings_balance
-        if self.initial_savings_input:
-            self.initial_savings_input.text = f"{float(initial_savings_balance):.2f}"
-        
-    def save_settings(self) -> None:
-        if not self.initial_savings_input:
-            return
-        text_value = self.initial_savings_input.text.strip()
-        try:
-            initial_savings_balance = float(text_value or 0)
-        except ValueError:
-            print("Invalid initial balance")
-            return
-        settings = dict(read_settings())
-        settings["initial_savings_balance"] = round(initial_savings_balance,2)
-        write_settings(settings)
-        print("Settings saved")
+        mapping = {
+            "savings_display": settings.get("initial_savings_balance", 0.0),
+            "savings_fd_display": settings.get("initial_savings_fd_balance", 0.0),
+            "savings_rd_display": settings.get("initial_savings_rd_balance", 0.0),
+            "savings_gold_display": settings.get("initial_savings_gold_balance", 0.0),
+        }
+        for attr, raw_value in mapping.items():
+            try:
+                amount = float(raw_value)
+            except (TypeError, ValueError):
+                amount = 0.0
+            setattr(self, attr, f"{amount:,.2f}")
 
     def on_kv_post(self, base_widget) -> None:
         Clock.schedule_once(lambda *_:self.refresh(),0)
@@ -358,7 +408,6 @@ class NetWorthScreen(Screen):
             if amount > 0
         ]
         self.savings_summary = savings_rows
-
 
 class CategoryTotalsScreen(Screen):
     category_summary = ListProperty([])
@@ -445,7 +494,10 @@ class SettingsScreen(Screen):
             self.initial_balance_input.text = f"{float(initial_balance):.2f}"
         if self.initial_cash_input:
             self.initial_cash_input.text = f"{float(initial_cash):.2f}"
-        
+
+    def refresh(self) -> None:
+        self.populate_settings()
+
     def save_settings(self) -> None:
         if not self.initial_balance_input or not self.initial_cash_input:
             return
@@ -466,6 +518,12 @@ class SettingsScreen(Screen):
         settings["initial_cash_balance"] = round(initial_cash,2)
         write_settings(settings)
         print("Settings saved")
+
+    def open_initial_savings_dialog(self) -> None:
+        dialog = SavingsInitialDialog()
+        dialog.parent_screen = self
+        dialog.populate_from_settings()
+        dialog.open()
 
     def clear_outstanding_debt(self) -> None:
         ensure_data_dir()
