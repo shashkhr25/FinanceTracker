@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 from typing import Dict
 from kivy.app import App
@@ -43,6 +43,18 @@ from logic import (
 KV_FILE = Path(__file__).with_name("ui.kv")
 
 
+def _parse_date_or_today(raw: str | None) -> date:
+    text = (raw or "").strip()
+    if not text:
+        return date.today()
+    for fmt in ("%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y"):
+        try:
+            return datetime.strptime(text, fmt).date()
+        except ValueError:
+            continue
+    return date.today()
+
+
 class AddExpenseDialog(ModalView):
     """Modal dialog for capturing expense details"""
     parent_screen = ObjectProperty(None)
@@ -50,6 +62,7 @@ class AddExpenseDialog(ModalView):
     description_input = ObjectProperty(None)
     category_input = ObjectProperty(None)
     device_spinner = ObjectProperty(None)
+    date_input = ObjectProperty(None)
 
     def handle_submit(self) -> None:
         if not self.parent_screen:
@@ -60,11 +73,14 @@ class AddExpenseDialog(ModalView):
             print("Invalid amount")
             return
 
+        txn_date = _parse_date_or_today(self.date_input.text if self.date_input else "")
+
         self.parent_screen.submit_expense(
             amount=amount,
             description=self.description_input.text.strip(),
             category=self.category_input.text.strip(),
-            device=self.device_spinner.text.strip()
+            device=self.device_spinner.text.strip(),
+            txn_date=txn_date
         )
         self.dismiss()
 
@@ -133,6 +149,7 @@ class AddIncomeDialog(ModalView):
     amount_input=ObjectProperty(None)
     description_input = ObjectProperty(None)
     device_spinner = ObjectProperty(None)
+    date_input = ObjectProperty(None)
 
     def handle_submit(self) -> None:
         if not self.parent_screen:
@@ -150,11 +167,14 @@ class AddIncomeDialog(ModalView):
             device_code = "SAVINGS_WITHDRAW"
             category_text = "Taken from Savings"
 
+        txn_date = _parse_date_or_today(self.date_input.text if self.date_input else "")
+
         self.parent_screen.submit_income(
             amount=amount,
             description=self.description_input.text.strip(),
             category=category_text,
-            device=device_code
+            device=device_code,
+            txn_date=txn_date
         )
         self.dismiss()
 
@@ -175,14 +195,19 @@ class DashboardScreen(Screen):
     def open_add_expense(self) -> None:
         dialog = AddExpenseDialog()
         dialog.parent_screen = self
+        if dialog.date_input:
+            dialog.date_input.text = date.today().isoformat()
         dialog.open()
 
     def open_add_income(self) -> None:
         dialog = AddIncomeDialog()
         dialog.parent_screen = self
+        if dialog.date_input:
+            dialog.date_input.text = date.today().isoformat()
         dialog.open()
 
-    def submit_expense(self, *, amount:float, description: str, category: str, device: str) -> None:
+    def submit_expense(self, *, amount:float, description: str, category: str, device: str, txn_date: date | None = None) -> None:
+        txn_date = txn_date or date.today()
         cleaned_device = device.strip().upper() if device else ""
         normalized_category = (category or "").strip().lower()
 
@@ -191,7 +216,7 @@ class DashboardScreen(Screen):
             transactions.append(
                 create_credit_card_payment(
                     amount=amount,
-                    date_value=date.today(),
+                    date_value=txn_date,
                     description=description,
                     category=category,
                     device=cleaned_device or "BANK_TRANSFER",
@@ -200,7 +225,7 @@ class DashboardScreen(Screen):
         elif cleaned_device in CREDIT_CARD_DEVICES:
             expense_tx, debt_tx = create_credit_card_expense(
                 amount = amount,
-                date_value=date.today(),
+                date_value=txn_date,
                 description=description,
                 category=category,
                 device=cleaned_device
@@ -210,7 +235,7 @@ class DashboardScreen(Screen):
             transactions.append(
                 create_expense_transaction(
                     amount = amount,
-                    date_value=date.today(),
+                    date_value=txn_date,
                     description=description,
                     category=category,
                     device=cleaned_device
@@ -252,10 +277,11 @@ class DashboardScreen(Screen):
                     networth_screen.refresh()
 
 
-    def submit_income(self, *, amount:float, description:str, category: str, device: str) -> None:
+    def submit_income(self, *, amount:float, description:str, category: str, device: str, txn_date: date | None = None) -> None:
+        txn_date = txn_date or date.today()
         transaction = create_income_transaction(
             amount=amount,
-            date_value=date.today(),
+            date_value=txn_date,
             description=description,
             category=category,
             device=device

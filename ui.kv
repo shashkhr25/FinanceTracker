@@ -241,13 +241,15 @@
 
 <AddExpenseDialog@ModalView>:
 	size_hint: None, None
-	size: dp(300), dp(350)
+	size: dp(320), dp(420)
 	auto_dismiss: False
 	background_color: 0,0,0,0.4
 	parent_screen: None
 	amount_input: amount_field
 	description_input: description_field
+	category_input: category_field
 	device_spinner: device_spinner
+	date_input: date_field
 	BoxLayout:
 		orientation: "vertical"
 		padding: dp(24)
@@ -270,7 +272,7 @@
 			cols:2
 			spacing: dp(12)
 			size_hint_y: None
-			height: dp(200)
+			height: dp(260)
 			Label:
 				text: "Amount"
 				color: rgba("#E2E8F0FF")
@@ -317,6 +319,20 @@
 				id: device_spinner
 				text: "UPI"
 				values: ["Cash","UPI","CREDIT_CARD", "CREDIT_CARD_UPI"]
+			Label:
+				text: "Date"
+				color: rgba("#E2E8F0FF")
+				size_hint_y: None
+				height: dp(32)
+			TextInput:
+				id: date_field
+				hint_text: "YYYY-MM-DD"
+				background_color: rgba("#1E293BFF")
+				foreground_color: rgba("#E2E8F0ff")
+				padding: dp(12)
+				radius: [12,12,12,12]
+				multiline: False
+				write_tab: False
 		BoxLayout:
 			size_hint_y: None
 			height: dp(52)
@@ -343,6 +359,7 @@
 	amount_input: amount_field
 	description_input: description_field
 	device_spinner: device_spinner
+	date_input: date_field
 	BoxLayout:
 		orientation: "vertical"
 		padding: dp(24)
@@ -403,6 +420,20 @@
 				id: device_spinner
 				text: "Paycheck"
 				values: ["Paycheck", "Home", "Personal split paid", "Refund", "Savings Withdraw", "Taken from Savings", "Others"]
+			Label:
+				text: "Date"
+				color: rgba("#E2E8F0FF")
+				size_hint_y: None
+				height: dp(32)
+			TextInput:
+				id: date_field
+				hint_text: "YYYY-MM-DD"
+				background_color: rgba("#1E293BFF")
+				foreground_color: rgba("#E2E8F0ff")
+				padding: dp(12)
+				radius: [12,12,12,12]
+				multiline: False
+				write_tab: False
 		BoxLayout:
 			size_hint_y: None
 			height: dp(52)
