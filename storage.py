@@ -32,6 +32,9 @@ CSV_COLUMNS: Sequence[str] = [
     "occasion",
     "effects_balance",
     "linked_tx_id",
+    "shared_flag",
+    "shared_splits",
+    "shared_notes",
 ]
 
 # --- File System Management ---

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List, Sequence
 from kivy.app import App
 from kivy.lang import Builder
 from kivy.metrics import dp
@@ -31,6 +31,8 @@ from logic import (
     create_debt_clearance_transaction,
     create_expense_transaction,
     create_income_transaction,
+    SharedSplit,
+    summarize_shared_expenses,
     summarize_by_category,
     transaction_from_row,
     transaction_to_row,
@@ -63,6 +65,33 @@ class AddExpenseDialog(ModalView):
     category_input = ObjectProperty(None)
     device_spinner = ObjectProperty(None)
     date_input = ObjectProperty(None)
+    shared_checkbox = ObjectProperty(None)
+    shared_participants_input = ObjectProperty(None)
+    shared_notes_input = ObjectProperty(None)
+
+    @staticmethod
+    def _parse_shared_entries(raw_text: str) -> List[SharedSplit]:
+        entries: List[SharedSplit] = []
+        if not raw_text:
+            return entries
+
+        parts = [chunk.strip() for chunk in raw_text.split(",")]
+        for part in parts:
+            if not part:
+                continue
+            if ":" in part:
+                name_raw, amount_raw = part.split(":", 1)
+                name = name_raw.strip()
+                if not name:
+                    continue
+                try:
+                    amount = float(amount_raw.strip())
+                except (TypeError, ValueError):
+                    amount = None
+                entries.append(SharedSplit(name=name, amount=amount))
+            else:
+                entries.append(SharedSplit(name=part.strip(), amount=None))
+        return entries
 
     def handle_submit(self) -> None:
         if not self.parent_screen:
@@ -75,12 +104,23 @@ class AddExpenseDialog(ModalView):
 
         txn_date = _parse_date_or_today(self.date_input.text if self.date_input else "")
 
+        shared_flag = bool(self.shared_checkbox.active) if self.shared_checkbox else False
+        participants_text = self.shared_participants_input.text if self.shared_participants_input else ""
+        shared_splits = self._parse_shared_entries(participants_text) if shared_flag else []
+        shared_notes = self.shared_notes_input.text.strip() if (self.shared_notes_input and shared_flag) else ""
+        if shared_flag and not shared_splits:
+            print("Shared expense selected but no participants provided")
+            return
+
         self.parent_screen.submit_expense(
             amount=amount,
             description=self.description_input.text.strip(),
             category=self.category_input.text.strip(),
             device=self.device_spinner.text.strip(),
-            txn_date=txn_date
+            txn_date=txn_date,
+            shared_flag=shared_flag,
+            shared_splits=shared_splits,
+            shared_notes=shared_notes,
         )
         self.dismiss()
 
@@ -206,7 +246,18 @@ class DashboardScreen(Screen):
             dialog.date_input.text = date.today().isoformat()
         dialog.open()
 
-    def submit_expense(self, *, amount:float, description: str, category: str, device: str, txn_date: date | None = None) -> None:
+    def submit_expense(
+        self,
+        *,
+        amount: float,
+        description: str,
+        category: str,
+        device: str,
+        txn_date: date | None = None,
+        shared_flag: bool = False,
+        shared_splits: Sequence[SharedSplit] | None = None,
+        shared_notes: str = "",
+    ) -> None:
         txn_date = txn_date or date.today()
         cleaned_device = device.strip().upper() if device else ""
         normalized_category = (category or "").strip().lower()
@@ -228,7 +279,10 @@ class DashboardScreen(Screen):
                 date_value=txn_date,
                 description=description,
                 category=category,
-                device=cleaned_device
+                device=cleaned_device,
+                shared_flag=shared_flag,
+                shared_splits=shared_splits,
+                shared_notes=shared_notes,
             )
             transactions.extend([expense_tx,debt_tx])
         else:
@@ -238,7 +292,10 @@ class DashboardScreen(Screen):
                     date_value=txn_date,
                     description=description,
                     category=category,
-                    device=cleaned_device
+                    device=cleaned_device,
+                    shared_flag=shared_flag,
+                    shared_splits=shared_splits,
+                    shared_notes=shared_notes,
                 )
             )
 
@@ -364,7 +421,8 @@ class TransactionsScreen(Screen):
                     "description_text": tx.description or tx.sub_type.replace("_"," ").title(),
                     "device_text" : tx.device or "-",
                     "amount_text": f"{sign}{tx.amount:,.2f}",
-                    "amount_color" : amount_color
+                    "amount_color" : amount_color,
+                    "shared_text": self._format_shared_text(tx),
                 }
             )
 
@@ -377,6 +435,16 @@ class TransactionsScreen(Screen):
             else:
                 self.empty_label.opacity = 1
                 self.empty_label.height = dp(32)
+
+    @staticmethod
+    def _format_shared_text(tx) -> str:
+        if not tx.shared_flag or not tx.shared_splits:
+            return ""
+        names = ", ".join(split.name for split in tx.shared_splits)
+        base = f"Shared with: {names}" if names else "Shared expense"
+        if tx.shared_notes:
+            return f"{base} | {tx.shared_notes}"
+        return base
 
 
 class NetWorthScreen(Screen):
@@ -502,6 +570,50 @@ class CategoryTotalsScreen(Screen):
             )
 
         self.category_summary = formatted
+
+
+class SharedExpensesScreen(Screen):
+    summary_data = ListProperty([])
+    detail_data = ListProperty([])
+    participant_input = ObjectProperty(None)
+    category_input = ObjectProperty(None)
+
+    def on_pre_enter(self, *_) -> None:
+        self.refresh()
+
+    def refresh(self) -> None:
+        ensure_data_dir()
+        rows = read_transactions()
+        transactions = [transaction_from_row(row) for row in rows]
+        participant = (self.participant_input.text or "").strip() if self.participant_input else ""
+        category = (self.category_input.text or "").strip() if self.category_input else ""
+        summary, details = summarize_shared_expenses(
+            transactions,
+            participant_filter=participant or None,
+            category_filter=category or None,
+        )
+        self.summary_data = [
+            {
+                "label_text": name,
+                "amount_text": f"{value:,.2f}",
+            }
+            for name, value in summary.items()
+        ]
+        self.detail_data = [
+            {
+                "date_text": tx.date.strftime("%d %b %Y"),
+                "category_text": tx.category or "Uncategorised",
+                "amount_text": f"{tx.amount:,.2f}",
+                "participants_text": ", ".join(
+                    f"{name} ({amt:,.2f})" for name, amt in allocations.items()
+                ),
+                "notes_text": tx.shared_notes or "",
+            }
+            for tx, allocations in details
+        ]
+
+    def handle_filter_change(self) -> None:
+        self.refresh()
 
 
     def handle_budget_input(self,category:str, raw_value:str) -> None:

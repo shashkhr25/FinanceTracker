@@ -5,15 +5,23 @@ Contains dataclasses, validation, and computation signatures.
 
 from __future__ import annotations
 
+import json
 import uuid
 from dataclasses import dataclass
 from datetime import date, datetime
-from typing import Dict, Iterable, List, Mapping, MutableMapping, Sequence, Tuple, Any
+from typing import Dict, Iterable, List, Mapping, MutableMapping, Sequence, Tuple, Any, Optional
 
 from storage import read_settings
 
 
 # --- Domain models (Central Data Structure) ---
+
+@dataclass(frozen=True)
+class SharedSplit:
+    """Represents a participant and their share of a shared expense."""
+    name: str
+    amount: Optional[float] = None
+
 
 @dataclass
 class Transaction:
@@ -31,6 +39,42 @@ class Transaction:
     occasion: str = ""
     effects_balance: bool = True
     linked_tx_id: str = ""
+    shared_flag: bool = False
+    shared_splits: Tuple[SharedSplit, ...] = ()
+    shared_notes: str = ""
+
+
+def _deserialize_shared_splits(raw: str) -> Tuple[SharedSplit, ...]:
+    if not raw:
+        return ()
+    try:
+        data = json.loads(raw)
+    except (TypeError, json.JSONDecodeError):
+        return ()
+
+    splits: List[SharedSplit] = []
+    for item in data:
+        if not isinstance(item, Mapping):
+            continue
+        name_raw = str(item.get("name", "")).strip()
+        if not name_raw:
+            continue
+        amount_raw = item.get("amount", None)
+        try:
+            amount_value = float(amount_raw) if amount_raw not in (None, "") else None
+        except (TypeError, ValueError):
+            amount_value = None
+        splits.append(SharedSplit(name=name_raw, amount=amount_value))
+    return tuple(splits)
+
+
+def _serialize_shared_splits(splits: Sequence[SharedSplit]) -> str:
+    if not splits:
+        return ""
+    payload = []
+    for split in splits:
+        payload.append({"name": split.name, "amount": split.amount})
+    return json.dumps(payload)
 
 # --- Configuration & Constants ---
 
@@ -96,6 +140,12 @@ def transaction_from_row(row: Mapping[str, str]) -> Transaction:
     except ValueError:
         amount_value = 0.0
 
+    shared_flag_raw = get("shared_flag", "False").lower()
+    shared_flag = shared_flag_raw in ("true", "1", "yes")
+    shared_splits_raw = row.get("shared_splits", "")
+    shared_splits = _deserialize_shared_splits(shared_splits_raw)
+    shared_notes = row.get("shared_notes", "") or ""
+
     return Transaction(
         id=get("id", uuid.uuid4().hex),
         timestamp=timestamp,
@@ -110,6 +160,9 @@ def transaction_from_row(row: Mapping[str, str]) -> Transaction:
         occasion=get("occasion"),
         effects_balance=affects_balance,
         linked_tx_id=get("linked_tx_id"),
+        shared_flag=shared_flag and bool(shared_splits),
+        shared_splits=shared_splits,
+        shared_notes=shared_notes,
     )
 
 def transaction_to_row(tx: Transaction) -> MutableMapping[str, object]:
@@ -129,6 +182,9 @@ def transaction_to_row(tx: Transaction) -> MutableMapping[str, object]:
         "occasion": tx.occasion,
         "effects_balance": "True" if tx.effects_balance else "False",
         "linked_tx_id": tx.linked_tx_id,
+        "shared_flag": "True" if tx.shared_flag and tx.shared_splits else "False",
+        "shared_splits": _serialize_shared_splits(tx.shared_splits),
+        "shared_notes": tx.shared_notes,
     }
 
 
@@ -250,6 +306,97 @@ def summarize_by_category(transactions: Iterable[Transaction]) -> Mapping[str, f
     return {key: round(value, 2) for key, value in totals.items()}
 
 
+def compute_shared_allocations(tx: Transaction) -> Dict[str, float]:
+    """Return per-participant allocations for a shared expense transaction."""
+
+    if not tx.shared_flag or not tx.shared_splits:
+        return {}
+
+    total_amount = normalize_amount(tx.amount)
+    explicit_allocations: Dict[str, float] = {}
+    unspecified_participants: List[str] = []
+
+    for split in tx.shared_splits:
+        name = split.name.strip()
+        if not name:
+            continue
+
+        amount_raw = split.amount
+        if amount_raw in (None, ""):
+            unspecified_participants.append(name)
+            continue
+
+        try:
+            share_value = round(abs(float(amount_raw)), 2)
+        except (TypeError, ValueError):
+            unspecified_participants.append(name)
+            continue
+
+        explicit_allocations[name] = explicit_allocations.get(name, 0.0) + share_value
+
+    specified_total = sum(explicit_allocations.values())
+    remaining = max(round(total_amount - specified_total, 2), 0.0)
+
+    allocations = dict(explicit_allocations)
+    if unspecified_participants:
+        count = len(unspecified_participants)
+        if count == 0:
+            return allocations
+
+        base_share = remaining / count if remaining > 0 else 0.0
+        distributed = 0.0
+        for idx, name in enumerate(unspecified_participants):
+            if idx == count - 1:
+                share = round(max(remaining - distributed, 0.0), 2)
+            else:
+                share = round(base_share, 2)
+                distributed += share
+            allocations[name] = allocations.get(name, 0.0) + share
+
+    return allocations
+
+
+def summarize_shared_expenses(
+    transactions: Sequence[Transaction],
+    participant_filter: str | None = None,
+    category_filter: str | None = None,
+) -> Tuple[Dict[str, float], List[Tuple[Transaction, Dict[str, float]]]]:
+    """Return per-person totals plus detailed allocations for shared expenses."""
+
+    participant_key = participant_filter.strip().lower() if participant_filter else None
+    category_key = category_filter.strip().lower() if category_filter else None
+
+    summary: Dict[str, float] = {}
+    details: List[Tuple[Transaction, Dict[str, float]]] = []
+
+    for tx in transactions:
+        if not tx.shared_flag:
+            continue
+
+        category_name = (tx.category or "").strip().lower()
+        if category_key and category_name != category_key:
+            continue
+
+        allocations = compute_shared_allocations(tx)
+        if not allocations:
+            continue
+
+        if participant_key:
+            name_map = {name.lower(): name for name in allocations}
+            if participant_key not in name_map:
+                continue
+            filtered_allocations = {name_map[participant_key]: allocations[name_map[participant_key]]}
+        else:
+            filtered_allocations = allocations
+
+        details.append((tx, allocations))
+
+        for name, amount in filtered_allocations.items():
+            summary[name] = round(summary.get(name, 0.0) + amount, 2)
+
+    return summary, details
+
+
 def create_credit_card_expense(
     amount: float, 
     date_value: date, 
@@ -260,6 +407,9 @@ def create_credit_card_expense(
     occasion: str = "",
     expense_sub_type: str = DEFAULT_CREDIT_CARD_EXPENSE_SUB_TYPE,
     debt_sub_type: str = DEFAULT_CREDIT_CARD_DEBT_SUB_TYPE,
+    shared_flag: bool = False,
+    shared_splits: Optional[Sequence[SharedSplit]] = None,
+    shared_notes: str = "",
     ) -> Tuple[Transaction, Transaction]:
     """Return paired transactions representing a credit-card purchase."""
     
@@ -278,6 +428,9 @@ def create_credit_card_expense(
         occasion=occasion,
         sub_type=expense_sub_type,
         effects_balance=False,
+        shared_flag=shared_flag,
+        shared_splits=shared_splits,
+        shared_notes=shared_notes,
     )
     
     debt_tx = create_income_transaction(
@@ -291,7 +444,7 @@ def create_credit_card_expense(
         sub_type=debt_sub_type,
         effects_balance=False,
     )
-    
+
     return link_transactions(expense_tx, debt_tx)
 
 
@@ -329,6 +482,9 @@ def create_expense_transaction(
     occasion: str = "",
     sub_type: str = DEFAULT_SUB_TYPE,
     effects_balance: bool = True,
+    shared_flag: bool = False,
+    shared_splits: Optional[Sequence[SharedSplit]] = None,
+    shared_notes: str = "",
     ) -> Transaction:
     """Convenience helper for expense transactions."""
     
@@ -337,6 +493,8 @@ def create_expense_transaction(
     if cleaned_device not in ALLOWED_DEVICES:
         cleaned_device = "OTHER"
         
+    splits_tuple: Tuple[SharedSplit, ...] = tuple(shared_splits or ())
+
     return Transaction(
         id=new_transaction_id(),
         timestamp=datetime.utcnow(),
@@ -351,6 +509,9 @@ def create_expense_transaction(
         occasion=occasion,
         effects_balance=effects_balance,
         linked_tx_id="",
+        shared_flag=shared_flag and bool(splits_tuple),
+        shared_splits=splits_tuple,
+        shared_notes=shared_notes if shared_flag and splits_tuple else "",
     )
 
 def create_income_transaction(

@@ -1,3 +1,26 @@
+<SharedSummaryRow@BoxLayout>:
+	label_text: ""
+	amount_text: ""
+	orientation: "horizontal"
+	size_hint_y: None
+	height: dp(36)
+	spacing: dp(8)
+	padding: [dp(8), 0]
+	Label:
+		text: root.label_text
+		color: rgba("#E2E8F0FF")
+		font_size: sp(13)
+		bold: True
+		valign: "middle"
+		text_size: self.size
+	Label:
+		text: root.amount_text
+		color: rgba("#86EFACFF")
+		font_size: sp(13)
+		bold: True
+		valign: "middle"
+		haligh: "right"
+		text_size: self.size
 
 <SavingsInitialDialog@ModalView>:
 	size_hint: None, None
@@ -107,6 +130,48 @@
 				multiline: False
 				write_tab: False
 		BoxLayout:
+			orientation: "vertical"
+			spacing: dp(6)
+			BoxLayout:
+				size_hint_y: None
+				height: dp(32)
+				Label:
+					text: "Shared expense?"
+					color: rgba("#E2E8F0FF")
+					valign: "middle"
+					text_size: self.size
+				Switch:
+					id: shared_toggle
+					active: False
+					color: rgba("#22C55EFF")
+			Label:
+				text: "Add participants as comma separated list. Use name:amount for fixed splits."
+				color: rgba("#94A3B8FF")
+				font_size: sp(11)
+				size_hint_y: None
+				height: dp(32)
+				text_size: self.width, None
+				valign: "middle"
+			TextInput:
+				id: shared_participants
+				disabled: not shared_toggle.active
+				opacity: 1 if shared_toggle.active else 0.5
+				hint_text: "e.g. Alex:500, Sam"
+				background_color: rgba("#1E293BFF")
+				foreground_color: rgba("#E2E8F0FF")
+				padding: dp(12)
+				radius: [12,12,12,12]
+				multiline: False
+			TextInput:
+				id: shared_notes
+				disabled: not shared_toggle.active
+				opacity: 1 if shared_toggle.active else 0.5
+				hint_text: "Optional notes"
+				background_color: rgba("#1E293BFF")
+				foreground_color: rgba("#E2E8F0FF")
+				padding: dp(12)
+				radius: [12,12,12,12]
+		BoxLayout:
 			size_hint_y: None
 			height: dp(52)
 			spacing: dp(12)
@@ -212,6 +277,12 @@
 		color: rgba("#FFFFFF")
 		on_release: app.root.current = "category_totals"
 	Button:
+		text: "Shared Expenses"
+		background_normal: ""
+		background_color: 0,0,0,0
+		color: rgba("#FFFFFF")
+		on_release: app.root.current = "shared_expenses"
+	Button:
 		text: "Networth"
 		background_normal: ""
 		background_color: 0,0,0,0
@@ -241,7 +312,7 @@
 
 <AddExpenseDialog@ModalView>:
 	size_hint: None, None
-	size: dp(320), dp(420)
+	size: dp(360), dp(520)
 	auto_dismiss: False
 	background_color: 0,0,0,0.4
 	parent_screen: None
@@ -250,6 +321,9 @@
 	category_input: category_field
 	device_spinner: device_spinner
 	date_input: date_field
+	shared_checkbox: shared_toggle
+	shared_participants_input: shared_participants
+	shared_notes_input: shared_notes
 	BoxLayout:
 		orientation: "vertical"
 		padding: dp(24)
@@ -268,71 +342,132 @@
 			bold: True
 			size_hint_y: None
 			height: self.texture_size[1]
-		GridLayout:
-			cols:2
-			spacing: dp(12)
-			size_hint_y: None
-			height: dp(260)
-			Label:
-				text: "Amount"
-				color: rgba("#E2E8F0FF")
+		ScrollView:
+			do_scroll_x: False
+			GridLayout:
+				cols: 1
+				spacing: dp(12)
 				size_hint_y: None
-				height: dp(32)
-			TextInput:
-				id: amount_field
-				input_filter: "float"
-				hint_text: "0.00"
-				background_color: rgba("#1E293BFF")
-				foreground_color: rgba("#E2E8F0ff")
-				padding: dp(12)
-				radius: [12,12,12,12]
-				multiline: False
-				on_text_validate: description_field.focus = True
-			Label:
-				text: "Description"
-				color: rgba("#E2E8F0FF")
-				size_hint_y: None
-				height: dp(32)
-			TextInput:
-				id: description_field
-				hint_text: "Optional"
-				background_color: rgba("#1E293BFF")
-				foreground_color: rgba("#E2E8F0ff")
-				padding: dp(12)
-				radius: [12,12,12,12]
-				multiline: False
-			Label:
-				text: "Category"
-				color: rgba("#E2E8F0FF")
-				size_hint_y: None
-				height: dp(32)
-			Spinner:
-				id: category_field
-				text: "Food"
-				values: ["Food","Home","Transportation","Personal","Rent","House EMI","Gym","Utilities","Shopping","Petrol","Subscription/Recharge","Book","Credit Card Bill", "Credit Card UPI Bill", "Savings","Savings RD","Savings FD","Savings Gold","Others"]
-			Label:
-				text: "Device"
-				color: rgba("#E2E8F0FF")
-				size_hint_y: None
-				height: dp(32)
-			Spinner:
-				id: device_spinner
-				text: "UPI"
-				values: ["Cash","UPI","CREDIT_CARD", "CREDIT_CARD_UPI"]
-			Label:
-				text: "Date"
-				color: rgba("#E2E8F0FF")
-				size_hint_y: None
-				height: dp(32)
-			TextInput:
-				id: date_field
-				hint_text: "YYYY-MM-DD"
-				background_color: rgba("#1E293BFF")
-				foreground_color: rgba("#E2E8F0ff")
-				padding: dp(12)
-				radius: [12,12,12,12]
-				multiline: False
-				write_tab: False
+				height: self.minimum_height
+				GridLayout:
+					cols:2
+					spacing: dp(12)
+					size_hint_y: None
+					height: self.minimum_height
+					row_default_height: dp(44)
+					row_force_default: True
+					Label:
+						text: "Amount"
+						color: rgba("#E2E8F0FF")
+						valign: "middle"
+						text_size: self.size
+					TextInput:
+						id: amount_field
+						input_filter: "float"
+						hint_text: "0.00"
+						background_color: rgba("#1E293BFF")
+						foreground_color: rgba("#E2E8F0ff")
+						padding: dp(12)
+						radius: [12,12,12,12]
+						multiline: False
+						on_text_validate: description_field.focus = True
+					Label:
+						text: "Description"
+						color: rgba("#E2E8F0FF")
+						valign: "middle"
+						text_size: self.size
+					TextInput:
+						id: description_field
+						hint_text: "Optional"
+						background_color: rgba("#1E293BFF")
+						foreground_color: rgba("#E2E8F0ff")
+						padding: dp(12)
+						radius: [12,12,12,12]
+						multiline: False
+					Label:
+						text: "Category"
+						color: rgba("#E2E8F0FF")
+						valign: "middle"
+						text_size: self.size
+					Spinner:
+						id: category_field
+						text: "Food"
+						values: ["Food","Home","Transportation","Personal","Rent","House EMI","Gym","Utilities","Shopping","Petrol","Subscription/Recharge","Book","Credit Card Bill", "Credit Card UPI Bill", "Savings","Savings RD","Savings FD","Savings Gold","Others"]
+					Label:
+						text: "Device"
+						color: rgba("#E2E8F0FF")
+						valign: "middle"
+						text_size: self.size
+					Spinner:
+						id: device_spinner
+						text: "UPI"
+						values: ["Cash","UPI","CREDIT_CARD", "CREDIT_CARD_UPI"]
+					Label:
+						text: "Date"
+						color: rgba("#E2E8F0FF")
+						valign: "middle"
+						text_size: self.size
+					TextInput:
+						id: date_field
+						hint_text: "YYYY-MM-DD"
+						background_color: rgba("#1E293BFF")
+						foreground_color: rgba("#E2E8F0ff")
+						padding: dp(12)
+						radius: [12,12,12,12]
+						multiline: False
+						write_tab: False
+				BoxLayout:
+					orientation: "vertical"
+					spacing: dp(6)
+					padding: [0, dp(4), 0, 0]
+					size_hint_y: None
+					height: self.minimum_height
+					BoxLayout:
+						size_hint_y: None
+						height: dp(32)
+						Label:
+							text: "Shared expense?"
+							color: rgba("#E2E8F0FF")
+							valign: "middle"
+							text_size: self.size
+						Switch:
+							id: shared_toggle
+							active: False
+							color: rgba("#22C55EFF")
+					Label:
+						text: "Add participants as comma separated list. Use name:amount for fixed splits."
+						color: rgba("#94A3B8FF")
+						font_size: sp(11)
+						size_hint_y: None
+						height: dp(32)
+						text_size: self.width, None
+						valign: "middle"
+					TextInput:
+						id: shared_participants
+						disabled: not shared_toggle.active
+						opacity: 1 if shared_toggle.active else 0.5
+						hint_text: "e.g. Alex:500, Sam"
+						background_color: rgba("#1E293BFF")
+						foreground_color: rgba("#E2E8F0FF")
+						padding: dp(12)
+						radius: [12,12,12,12]
+						size_hint_y: None
+						height: dp(44)
+						multiline: False
+						write_tab: False
+					TextInput:
+						id: shared_notes
+						disabled: not shared_toggle.active
+						opacity: 1 if shared_toggle.active else 0.5
+						hint_text: "Optional notes"
+						background_color: rgba("#1E293BFF")
+						foreground_color: rgba("#E2E8F0FF")
+						padding: dp(12)
+						radius: [12,12,12,12]
+						size_hint_y: None
+						height: dp(44)
+						multiline: False
+						write_tab: False
 		BoxLayout:
 			size_hint_y: None
 			height: dp(52)
@@ -544,6 +679,7 @@
 	device_text: ""
 	amount_text: ""
 	amount_color: rgba("#86EFACFF")
+	shared_text: ""
 	orientation: "horizontal"
 	size_hint_y: None
 	height: dp(72)
@@ -583,7 +719,7 @@
 	BoxLayout:
 		orientation: "vertical"
 		size_hint_x: None
-		width: dp(120)
+		width: dp(150)
 		Label:
 			text: root.device_text
 			color: rgba("#94A3B8FF")
@@ -596,6 +732,14 @@
 			halign: "right"
 			text_size: self.size
 			valign: "middle"
+		Label:
+			text: root.shared_text
+			color: rgba("#FACC15FF")
+			font_size: sp(11)
+			halign: "right"
+			text_size: self.size
+			valign: "middle"
+			opacity: 1 if root.shared_text else 0
 
 <SavingsSummaryRow@BoxLayout>:
 	label_text: ""
@@ -1066,9 +1210,152 @@
 				on_release: root.open_initial_savings_dialog()
 		
 
+<SharedExpensesScreen>:
+	name: "shared_expenses"
+	summary_data: []
+	detail_data: []
+	participant_input: participant_input
+	category_input: category_input
+	BoxLayout:
+		orientation: "vertical"
+		canvas.before:
+			Color:
+				rgba: rgba("#0B1020FF")
+			Rectangle:
+				pos: self.pos
+				size: self.size
+		TopAppBar:
+		Button:
+			size_hint: None,None
+			size: dp(44), dp(44)
+			text: "<-"
+			font_name: "DejaVuSans.ttf"
+			font_size: sp(20)
+			background_normal: ""
+			background_color: 0,0,0,0
+			color: rgba("#E2E8F0FF")
+			on_release: app.root.current = "dashboard"
+		ScrollView:
+			do_scroll_x: False
+			GridLayout:
+				cols: 1
+				padding: dp(24)
+				spacing: dp(16)
+				size_hint_y: None
+				height: self.minimum_height
+				Label:
+					text: "Shared Expenses"
+					color: rgba("#FFFFFF")
+					font_size: sp(20)
+					bold: True
+				BoxLayout:
+					orientation: "horizontal"
+					spacing: dp(12)
+					TextInput:
+						id: participant_input
+						hint_text: "Participant name"
+						background_color: rgba("#1E293BFF")
+						foreground_color: rgba("#E2E8F0FF")
+						padding: dp(12)
+						radius: [12,12,12,12]
+						multiline: False
+						on_text_validate: root.handle_filter_change()
+					TextInput:
+						id: category_input
+						hint_text: "Category"
+						background_color: rgba("#1E293BFF")
+						foreground_color: rgba("#E2E8F0FF")
+						padding: dp(12)
+						radius: [12,12,12,12]
+						multiline: False
+						on_text_validate: root.handle_filter_change()
+					Button:
+						text: "Apply"
+						size_hint_x: None
+						width: dp(100)
+						on_release: root.handle_filter_change()
+						background_color: rgba("#22C55EFF")
+						color: rgba("#0F172AFF")
+				GlassCard:
+					size_hint_y: None
+					height: dp(220)
+					Label:
+						text: "Per-person summary"
+						color: rgba("#94A3B8FF")
+						font_size: sp(14)
+						bold: True
+					RecycleView:
+						viewclass: "SharedSummaryRow"
+						data: root.summary_data
+						bar_width: dp(4)
+						scroll_wheel_distance: dp(80)
+						RecycleBoxLayout:
+							default_size: None, dp(36)
+							default_size_hint: 1, None
+							size_hint_y: None
+							height: self.minimum_height
+							orientation: "vertical"
+				GlassCard:
+					size_hint_y: None
+					height: dp(420)
+					Label:
+						text: "Transaction details"
+						color: rgba("#94A3B8FF")
+						font_size: sp(14)
+						bold: True
+					RecycleView:
+						viewclass: "SharedDetailRow"
+						data: root.detail_data
+						bar_width: dp(4)
+						scroll_wheel_distance: dp(80)
+						RecycleBoxLayout:
+							default_size: None, dp(88)
+							default_size_hint: 1, None
+							size_hint_y: None
+							height: self.minimum_height
+							orientation: "vertical"
+
+<SharedDetailRow@BoxLayout>:
+	date_text: ""
+	category_text: ""
+	amount_text: ""
+	participants_text: ""
+	notes_text: ""
+	orientation: "vertical"
+	size_hint_y: None
+	height: dp(88)
+	padding: dp(16)
+	spacing: dp(4)
+	canvas.before:
+		Color:
+			rgba: (26/255, 32/255, 45/255, 0.7)
+		RoundedRectangle:
+			pos: self.pos
+			size: self.size
+			radius: [12,12,12,12]
+	Label:
+		text: f"{root.date_text} | {root.category_text}"
+		color: rgba("#E2E8F0FF")
+		font_size: sp(13)
+	Label:
+		text: f"Amount: {root.amount_text}"
+		color: rgba("#86EFACFF")
+		font_size: sp(13)
+	Label:
+		text: root.participants_text
+		color: rgba("#FACC15FF")
+		font_size: sp(12)
+	Label:
+		text: root.notes_text or ""
+		color: rgba("#94A3B8FF")
+		font_size: sp(11)
+		text_size: self.size
+		valign: "top"
+
 MoneyTrackerScreenManager:
 	DashboardScreen:
 	TransactionsScreen:
 	CategoryTotalsScreen:
 	SettingsScreen:
 	NetWorthScreen:
+	SharedExpensesScreen:
