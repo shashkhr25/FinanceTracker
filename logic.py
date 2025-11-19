@@ -206,8 +206,9 @@ def compute_outstanding_debt(transactions: Sequence[Transaction]) -> float:
 def compute_savings_totals(transactions: Sequence[Transaction]) -> Dict[str, float]:
     """Aggregate savings-related flows, including withdrawals."""
     totals: Dict[str, float] = {label: 0.0 for label in SAVINGS_CATEGORY_LABELS.values()}
-    
+
     settings = read_settings()
+    savings_label = SAVINGS_CATEGORY_LABELS.get("savings", "Savings")
     for label, setting_key in SAVINGS_INITIAL_SETTING_KEYS.items():
         initial_value_raw = settings.get(setting_key, 0.0)
         try:
@@ -225,8 +226,8 @@ def compute_savings_totals(transactions: Sequence[Transaction]) -> Dict[str, flo
                 totals[label] = totals.get(label, 0.0) + tx.amount
         elif tx.tx_type == "income":
             if category_key in SAVINGS_WITHDRAW_CATEGORY_KEYS or tx.device == "SAVINGS_WITHDRAW":
-                totals["savings"] = totals.get("savings", 0.0) - tx.amount
-            
+                totals[savings_label] = totals.get(savings_label, 0.0) - tx.amount
+
     return {label: round(amount, 2) for label, amount in totals.items()}
     
 def compute_net_worth(transactions: Sequence[Transaction], savings: float, assets: float) -> float:

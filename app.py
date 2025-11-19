@@ -318,11 +318,17 @@ class DashboardScreen(Screen):
         initial_cash_raw = settings.get("initial_cash_balance",0)
         try:
             initial_balance = float(initial_raw)
+        except(TypeError,ValueError):
+            initial_balance = 0.0
+
+        try:
             initial_cash_balance = float(initial_cash_raw)
         except(TypeError,ValueError):
-            initial_balance=0.0
+            initial_cash_balance = 0.0
 
-        balance_value = compute_balance(transactions, initial_balance=initial_balance)
+        combined_initial_balance = initial_balance + initial_cash_balance
+
+        balance_value = compute_balance(transactions, initial_balance=combined_initial_balance)
         cash_balance_value = compute_cash_balance(transactions, initial_cash_balance=initial_cash_balance)
         debt_value = compute_outstanding_debt(transactions)
         self.current_balance_text = f"{balance_value:,.2f}"
@@ -413,18 +419,26 @@ class NetWorthScreen(Screen):
         transactions = [transaction_from_row(row) for row in rows]
         settings = read_settings()
         initial_raw = settings.get("initial_balance",0)
+        initial_cash_raw = settings.get("initial_cash_balance",0)
         try:
             initial_balance = float(initial_raw)
         except(TypeError,ValueError):
-            initial_balance = 0.00
+            initial_balance = 0.0
 
-        balance_value = compute_balance(transactions, initial_balance=initial_balance)
+        try:
+            initial_cash_balance = float(initial_cash_raw)
+        except(TypeError,ValueError):
+            initial_cash_balance = 0.0
+
+        combined_initial_balance = initial_balance + initial_cash_balance
+
+        balance_value = compute_balance(transactions, initial_balance=combined_initial_balance)
         debt_value = compute_outstanding_debt(transactions)
         savings_total = compute_savings_totals(transactions)
         total_savings = sum(savings_total.values())
 
         self.liquid_balance_text = f"{balance_value:,.2f}"
-        self.liquid_balance_caption = f"{initial_balance:,.2f}"
+        self.liquid_balance_caption = f"{combined_initial_balance:,.2f}"
         self.outstanding_debt_text = f"{debt_value:,.2f}"
         if debt_value > 0 :
             self.outstanding_debt_caption = "Credit card outstanding Debt"
