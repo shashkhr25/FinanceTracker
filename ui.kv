@@ -278,15 +278,15 @@
 				color: rgba("#E2E8F0FF")
 				size_hint_y: None
 				height: dp(32)
-			TextInput:
+			Spinner:
 				id: category_field
-				hint_text: "eg. Salary"
+				text: "Salary"
+				values: ["Salary", "Bonus", "Other", "Taken from Savings", "Refund"]
+				background_normal: ""
 				background_color: rgba("#1E293BFF")
-				foreground_color: rgba("#E2E8F0FF")
-				padding: dp(12)
-				radius: [12,12,12,12]
-				multiline : False
-				write_tab: False
+				color: rgba("#E2E8F0FF")
+				size_hint_y: None
+				height: dp(40)
 			Label:
 				text: "Device"
 				color: rgba("#E2E8F0FF")
@@ -605,18 +605,6 @@
 						AnchorLayout:
 							anchor_x: "left"
 							anchor_y: "center"
-							Button:
-								size_hint: None, None
-								size: dp(36), dp(36)
-								background_normal: ""
-								background_color: rgba("#4B5563FF")
-								color: rgba("#FFFFFF")
-								text: "✕"
-								font_size: sp(14)
-								on_release: app.root.get_screen("dashboard").clear_outstanding_debt()
-						AnchorLayout:
-							anchor_x: "left"
-							anchor_y: "center"
 							AccentButton:
 								text: "Add expense"
 								background_color: rgba("#EF5250FF")
@@ -894,6 +882,7 @@
 <SettingsScreen>:
 	name: "settings"
 	initial_balance_input: initial_balance_input
+	initial_cash_input: initial_cash_input
 	BoxLayout:
 		orientation: "vertical"
 		canvas.before:
@@ -934,20 +923,19 @@
 						TextInput:
 							id:	initial_balance_input
 							multiline: False
-							hint_text: "Initial Balance"
+							hint_text: "Initial Bank Balance"
 							background_color: rgba("#1E293BFF")
 							foreground_color: rgba("#E2E8F0FF")
 							padding: dp(16)
 							radius: [12,12,12,12]
-							on_text_validate: Currency.focus = True
 						TextInput:
-							id:	Currency
-							hint_text: "Currency"
+							id:	initial_cash_input
+							hint_text: "Initial Cash Balance"
 							background_color: rgba("#1E293BFF")
 							foreground_color: rgba("#E2E8F0FF")
 							padding: dp(16)
 							radius: [12,12,12,12]
-							multiline: False	
+							multiline: False
 					Button:
 						text: "save"
 						size_hint: None, None
@@ -967,7 +955,16 @@
 				background_color: rgba("#71ce92ff")
 				color: rgba("#FFFFFF")
 				pos_hint: {"center_x":0.5}
-				on_release: root.start_new_month()		
+				on_release: root.start_new_month()
+			Button:
+				text: "Clear Outstanding Debt"
+				size_hint: None, None
+				size: dp(200), dp(44)
+				background_color: rgba("#F97316FF")
+				color: rgba("#FFFFFF")
+				pos_hint: {"center_x":0.5}
+				on_release: root.clear_outstanding_debt()
+		
 
 MoneyTrackerScreenManager:
 	DashboardScreen:

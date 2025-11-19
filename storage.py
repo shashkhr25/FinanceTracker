@@ -68,18 +68,23 @@ def read_settings(settings_path: Path = SETTINGS_JSON) -> Mapping[str, Any]:
     ensure_data_dir(settings_path.parent)
 
     if not settings_path.exists():
-        return {"initial_balance": 0.0, "category_budgets": {}}
+        return {"initial_balance": 0.0, "initial_cash_balance": 0.0, "category_budgets": {}}
 
     with settings_path.open("r", encoding="utf-8") as handle:
         try:
             data: Dict[str, Any] = json.load(handle)
             if "initial_balance" not in data:
-                data["initial_balance"] = 0.0
+                data["initial_balance"] = data.get("initial balance", 0.0)
+            if "initial_cash_balance" not in data:
+                data["initial_cash_balance"] = 0.0
             if "category_budgets" not in data or not isinstance(data["category_budgets"], dict):
                 data["category_budgets"] = {}
+            # Clean legacy key
+            if "initial balance" in data and "initial_balance" in data:
+                data.pop("initial balance", None)
             return data
         except json.JSONDecodeError:
-            return {"initial_balance": 0.0, "category_budgets": {}}
+            return {"initial_balance": 0.0, "initial_cash_balance": 0.0, "category_budgets": {}}
 
 
 def write_settings(settings: Mapping[str, object], settings_path: Path = SETTINGS_JSON) -> None:

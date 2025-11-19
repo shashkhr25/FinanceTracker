@@ -42,6 +42,7 @@ CREDIT_CARD_PAYMENT_SUB_TYPE = "credit_card_payment"
 DEFAULT_CREDIT_CARD_DEBT_SUB_TYPE = "credit_card_debt"
 DEFAULT_SUB_TYPE = "regular"
 CREDIT_CARD_PAYMENT_CATEGORY_KEYS = {"credit card bill", "credit card upi bill"}
+SAVINGS_WITHDRAW_CATEGORY_KEYS = {"taken from savings"}
 SAVINGS_CATEGORY_LABELS = {
     "savings fd": "Savings FD",
     "savings rd": "Savings RD",
@@ -197,7 +198,7 @@ def compute_outstanding_debt(transactions: Sequence[Transaction]) -> float:
     return round(max(debt_total,0.0), 2)
 
 def compute_savings_totals(transactions: Sequence[Transaction]) -> Dict[str, float]:
-    """Aggregate savings-related expenses by configured categories."""
+    """Aggregate savings-related flows, including withdrawals."""
     totals: Dict[str, float] = {label: 0.0 for label in SAVINGS_CATEGORY_LABELS.values()}
     
     settings = read_settings()
@@ -205,14 +206,14 @@ def compute_savings_totals(transactions: Sequence[Transaction]) -> Dict[str, flo
     totals["savings"] = totals.get("savings", 0.0) + initial_savings_balance
     
     for tx in transactions:
-        if tx.tx_type != "expense":
-            continue
-            
         category_key = (tx.category or "").strip().lower()
-        
-        if category_key in SAVINGS_CATEGORY_LABELS:
-            label = SAVINGS_CATEGORY_LABELS[category_key]
-            totals[label] = totals.get(label, 0.0) + tx.amount
+
+        if tx.tx_type == "expense":
+            if category_key in SAVINGS_CATEGORY_LABELS:
+                label = SAVINGS_CATEGORY_LABELS[category_key]
+                totals[label] = totals.get(label, 0.0) + tx.amount
+        elif tx.tx_type == "income" and category_key in SAVINGS_WITHDRAW_CATEGORY_KEYS:
+            totals["savings"] = totals.get("savings", 0.0) - tx.amount
             
     return {label: round(amount, 2) for label, amount in totals.items()}
     

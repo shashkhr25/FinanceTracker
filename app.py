@@ -190,44 +190,6 @@ class DashboardScreen(Screen):
                 if hasattr(networth_screen, "refresh"):
                     networth_screen.refresh()
 
-    def clear_outstanding_debt(self) -> None:
-        ensure_data_dir()
-        rows = read_transactions()
-        transactions = [transaction_from_row(row) for row in rows]
-        debt_value = compute_outstanding_debt(transactions)
-
-        if debt_value <= 0:
-            print("No outstanding debt to clear")
-            return
-
-        clearance_tx = create_debt_clearance_transaction(
-            amount=debt_value,
-            date_value=date.today(),
-            description="Debt cleared via dashboard",
-        )
-
-        ok, errors = validate_transaction(clearance_tx)
-        if not ok:
-            for err in errors:
-                print(f"Validation error: {err}")
-            return
-
-        append_transaction(transaction_to_row(clearance_tx))
-        print("Outstanding debt cleared")
-
-        self.refresh_metrics()
-
-        if self.manager:
-            if "transactions" in self.manager.screen_names:
-                transactions_screen = self.manager.get_screen("transactions")
-                if hasattr(transactions_screen, "refresh"):
-                    transactions_screen.refresh()
-
-            if "networth" in self.manager.screen_names:
-                networth_screen = self.manager.get_screen("networth")
-                if hasattr(networth_screen, "refresh"):
-                    networth_screen.refresh()
-
 
     def submit_income(self, *, amount:float, description:str, category: str, device: str) -> None:
         transaction = create_income_transaction(
@@ -470,29 +432,81 @@ class CategoryTotalsScreen(Screen):
 
 class SettingsScreen(Screen):
     initial_balance_input = ObjectProperty(None)
+    initial_cash_input = ObjectProperty(None)
 
     def on_pre_enter(self, *_) -> None:
         self.populate_settings()
     
     def populate_settings(self) -> None:
         settings = read_settings()
-        initial_balance = settings.get("initial balance", 0.0)
+        initial_balance = settings.get("initial_balance", 0.0)
+        initial_cash = settings.get("initial_cash_balance", 0.0)
         if self.initial_balance_input:
             self.initial_balance_input.text = f"{float(initial_balance):.2f}"
+        if self.initial_cash_input:
+            self.initial_cash_input.text = f"{float(initial_cash):.2f}"
         
     def save_settings(self) -> None:
-        if not self.initial_balance_input:
+        if not self.initial_balance_input or not self.initial_cash_input:
             return
-        text_value = self.initial_balance_input.text.strip()
+        balance_text = self.initial_balance_input.text.strip()
+        cash_text = self.initial_cash_input.text.strip()
         try:
-            initial_balance = float(text_value or 0)
+            initial_balance = float(balance_text or 0)
         except ValueError:
             print("Invalid initial balance")
             return
+        try:
+            initial_cash = float(cash_text or 0)
+        except ValueError:
+            print("Invalid initial cash balance")
+            return
         settings = dict(read_settings())
         settings["initial_balance"] = round(initial_balance,2)
+        settings["initial_cash_balance"] = round(initial_cash,2)
         write_settings(settings)
         print("Settings saved")
+
+    def clear_outstanding_debt(self) -> None:
+        ensure_data_dir()
+        rows = read_transactions()
+        transactions = [transaction_from_row(row) for row in rows]
+        debt_value = compute_outstanding_debt(transactions)
+
+        if debt_value <= 0:
+            print("No outstanding debt to clear")
+            return
+
+        clearance_tx = create_debt_clearance_transaction(
+            amount=debt_value,
+            date_value=date.today(),
+            description="Debt cleared via settings",
+        )
+
+        ok, errors = validate_transaction(clearance_tx)
+        if not ok:
+            for err in errors:
+                print(f"Validation error: {err}")
+            return
+
+        append_transaction(transaction_to_row(clearance_tx))
+        print("Outstanding debt cleared")
+
+        if self.manager:
+            if "dashboard" in self.manager.screen_names:
+                dashboard_screen = self.manager.get_screen("dashboard")
+                if hasattr(dashboard_screen, "refresh_metrics"):
+                    dashboard_screen.refresh_metrics()
+
+            if "transactions" in self.manager.screen_names:
+                transactions_screen = self.manager.get_screen("transactions")
+                if hasattr(transactions_screen, "refresh"):
+                    transactions_screen.refresh()
+
+            if "networth" in self.manager.screen_names:
+                networth_screen = self.manager.get_screen("networth")
+                if hasattr(networth_screen, "refresh"):
+                    networth_screen.refresh()
 
     def start_new_month(self) -> None:
         start_new_month_transactionfile()
