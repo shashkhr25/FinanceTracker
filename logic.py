@@ -272,6 +272,7 @@ def compute_savings_totals(transactions: Sequence[Transaction]) -> Dict[str, flo
         except (TypeError, ValueError):
             initial_value = 0.0
         totals[label] = totals.get(label, 0.0) + initial_value
+        print(totals[label])
     
     for tx in transactions:
         category_key = (tx.category or "").strip().lower()
@@ -283,6 +284,7 @@ def compute_savings_totals(transactions: Sequence[Transaction]) -> Dict[str, flo
         elif tx.tx_type == "income":
             if category_key in SAVINGS_WITHDRAW_CATEGORY_KEYS or tx.device == "SAVINGS_WITHDRAW":
                 totals[savings_label] = totals.get(savings_label, 0.0) - tx.amount
+                print(totals[savings_label])
 
     return {label: round(amount, 2) for label, amount in totals.items()}
     

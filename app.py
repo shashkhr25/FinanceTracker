@@ -572,7 +572,11 @@ class NetWorthScreen(Screen):
         debt_value = compute_outstanding_debt(transactions)
         savings_total = compute_savings_totals(transactions)
         total_savings = sum(savings_total.values())
-
+        
+        self.savings_display = f"{savings_total["Savings"]:,.2f}"
+        self.savings_fd_display = f"{savings_total["Savings FD"]:,.2f}"
+        self.savings_rd_display = f"{savings_total["Savings RD"]:,.2f}"
+        self.savings_gold_display = f"{savings_total["Savings Gold"]:,.2f}"
         self.liquid_balance_text = f"{balance_value:,.2f}"
         self.liquid_balance_caption = f"{combined_initial_balance:,.2f}"
         self.outstanding_debt_text = f"{debt_value:,.2f}"
@@ -582,15 +586,6 @@ class NetWorthScreen(Screen):
             self.outstanding_debt_caption = "No outstanding debt"
 
         self.total_savings_text = f"{total_savings:,.2f}"
-        savings_rows = [
-            {
-                "label_text": label,
-                "amount_text": f"{amount:,.2f}",
-                "amount_color": "0EA5E9FF",
-            }
-            for label, amount in savings_total.items()
-        ]
-        self.savings_summary = savings_rows
 
 class CategoryTotalsScreen(Screen):
     category_summary = ListProperty([])
