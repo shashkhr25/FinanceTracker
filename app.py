@@ -633,6 +633,28 @@ class CategoryTotalsScreen(Screen):
 
         self.category_summary = formatted
 
+    def handle_budget_input(self,category:str, raw_value:str) -> None:
+        text_value = (raw_value or "").strip()
+        if not text_value:
+            budget_value = 0.0
+        else:
+            cleaned = text_value.replace("","").replace(",","")
+            try:
+                budget_value = float(cleaned)
+            except ValueError:
+                return
+        settings = dict(read_settings())
+        budgets = dict(settings.get("category_budgets",{}))
+
+        if budget_value <= 0:
+            budgets.pop(category,None)
+        else:
+            budgets[category] = round(budget_value,2)
+
+        settings["category_budgets"] = budgets
+        write_settings(settings)
+        self.refresh()
+
 
 class SharedExpensesScreen(Screen):
     summary_data = ListProperty([])
