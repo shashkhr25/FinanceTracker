@@ -589,14 +589,33 @@ class NetWorthScreen(Screen):
 
 class CategoryTotalsScreen(Screen):
     category_summary = ListProperty([])
+    filter_text_input = ObjectProperty(None)
+    filter_month_input = ObjectProperty(None)
+    filter_year_input = ObjectProperty(None)
 
     def on_pre_enter(self, *_) -> None:
+        self.initialize_filters()
         self.refresh()
 
     def refresh(self) -> None:
         ensure_data_dir()
         rows = read_transactions()
         transactions = [transaction_from_row(row) for row in rows]
+        
+        # Get month/year filters, default to current month
+        current_date = date.today()
+        month_filter = (self.filter_month_input.text or "").strip() if self.filter_month_input else str(current_date.month)
+        year_filter = (self.filter_year_input.text or "").strip() if self.filter_year_input else str(current_date.year)
+        
+        # Filter transactions by month and year
+        if month_filter.isdigit() and year_filter.isdigit():
+            target_month = int(month_filter)
+            target_year = int(year_filter)
+            transactions = [tx for tx in transactions if tx.date.month == target_month and tx.date.year == target_year]
+        
+        # Get text filter
+        text_filter = (self.filter_text_input.text or "").strip().lower() if self.filter_text_input else ""
+
         settings = read_settings()
         budget_raw = settings.get("category_budgets",{}) if isinstance(settings,dict) else {}
         budgets : Dict[str,float] = {}
@@ -609,6 +628,10 @@ class CategoryTotalsScreen(Screen):
         category_totals = summarize_by_category(transactions)
         formatted = []
         for category,totals in sorted(category_totals.items(),key=lambda item : item[0].lower()):
+            # Apply text filter
+            if text_filter and text_filter not in category.lower():
+                continue
+                
             budget =  budgets.get(category,0.0)
             if budget > 0:
                 variance = budget - totals
@@ -632,6 +655,23 @@ class CategoryTotalsScreen(Screen):
             )
 
         self.category_summary = formatted
+        
+    def clear_filters(self) -> None:
+        current_date = date.today()
+        if self.filter_text_input:
+            self.filter_text_input.text = ""
+        if self.filter_month_input:
+            self.filter_month_input.text = str(current_date.month)
+        if self.filter_year_input:
+            self.filter_year_input.text = str(current_date.year)
+        self.refresh()
+        
+    def initialize_filters(self) -> None:
+        current_date = date.today()
+        if self.filter_month_input and not self.filter_month_input.text:
+            self.filter_month_input.text = str(current_date.month)
+        if self.filter_year_input and not self.filter_year_input.text:
+            self.filter_year_input.text = str(current_date.year)
 
     def handle_budget_input(self,category:str, raw_value:str) -> None:
         text_value = (raw_value or "").strip()

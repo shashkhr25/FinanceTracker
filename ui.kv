@@ -899,6 +899,9 @@
 <CategoryTotalsScreen>:
 	name: "category_totals"
 	category_summary: []
+	filter_text_input: filter_text
+	filter_month_input: filter_month
+	filter_year_input: filter_year
 	BoxLayout:
 		orientation: "horizontal"
 		NavigationDrawer:
@@ -911,20 +914,82 @@
 					pos: self.pos
 					size: self.size
 			TopAppBar:
-			BoxLayout:
-				orientation: "vertical"
-				padding: dp(14)
-				spacing: dp(18)
-				size_hint_y: None
-				height: dp(10)
+				Button:
+					size_hint:	None, None
+					size: dp(44), dp(44)
+					text: "<-"
+					font_name: "DejaVuSans.ttf"
+					font_size: sp(20)
+					background_normal: ""
+					background_color: 0,0,0,0
+					color: rgba("#E2E8F0FF")
+					on_release: app.root.current = "dashboard"
 				Label:
 					text: "Category Totals"
-					color: rgba("#FFFFFF")
-					font_size: sp(12)
+					color: rgba("#fff1d6")
+					font_size: sp(20)
 					bold: True
-					halign: "left"
-					valign: "middle"
 					text_size: self.size
+					halign: "left"
+					valigh: "middle"
+			BoxLayout:
+				orientation: "vertical"
+				padding: [dp(16), dp(8), dp(16), dp(8)]
+				spacing: dp(12)
+				size_hint_y: None
+				height: dp(120)
+				BoxLayout:
+					size_hint_y: None
+					height: dp(44)
+					spacing: dp(8)
+					TextInput:
+						id: filter_text
+						hint_text: "Search categories..."
+						background_color: rgba("#1E293BFF")
+						foreground_color: rgba("#E2E8F0FF")
+						padding: dp(12)
+						radius: [8,8,8,8]
+						multiline: False
+						size_hint_y: None
+						height: dp(44)
+						on_text_validate: root.refresh()
+				BoxLayout:
+					size_hint_y: None
+					height: dp(44)
+					spacing: dp(8)
+					TextInput:
+						id: filter_month
+						hint_text: "Month (1-12)"
+						background_color: rgba("#1E293BFF")
+						foreground_color: rgba("#E2E8E0FF")
+						padding: dp(12)
+						radius: [8,8,8,8]
+						size_hint_x: 0.3
+						size_hint_y: None
+						height: dp(44)
+						multiline: False
+						on_text_validate: root.refresh()
+					TextInput:
+						id: filter_year
+						hint_text: "Year"
+						background_color: rgba("#1E293BFF")
+						foreground_color: rgba("#E2E8E0FF")
+						padding: dp(12)
+						radius: [8,8,8,8]
+						size_hint_x: 0.3
+						size_hint_y: None
+						height: dp(44)
+						multiline: False
+						on_text_validate: root.refresh()
+					Button:
+						text: "Clear"
+						size_hint_x: 0.4
+						size_hint_y: None
+						height: dp(44)
+						background_color: rgba("#475569FF")
+						color: rgba("#FFFFFF")
+						on_release: root.clear_filters()
+					
 			BoxLayout:
 				orientation: "vertical"
 				padding: dp(10)
@@ -1203,18 +1268,11 @@
 							color: rgba("#FFFFFF")
 							on_release: root.save_settings()
 		
-		GridLayout:
-			cols:3
+		BoxLayout:
+			orientation: "horizontal"
 			spacing: dp(12)
 			padding: dp(20)
-			Button:
-				text: "Start New Month"
-				size_hint_y: None
-				height: dp(44)
-				background_normal: ""
-				background_color: rgba("#34D399FF")
-				color: rgba("#0F172AFF")
-				on_release: root.start_new_month()
+			# Removed Start New Month button
 			Button:
 				text: "Clear Outstanding Debt"
 				size_hint_y: None
