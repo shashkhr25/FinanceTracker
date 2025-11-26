@@ -553,6 +553,19 @@
 						size_hint_y: None
 						height: dp(32)
 						Label:
+							text: "Received in cash?"
+							color: rgba("#E2E8F0FF")
+							valign: "middle"
+							text_size: self.size
+						Switch:
+							id: cash_toggle
+							active: root.cash_toggle if hasattr(root, 'cash_toggle') else False
+							color: rgba("#22C55EFF")
+							on_active: root.cash_toggle = self.active
+					BoxLayout:
+						size_hint_y: None
+						height: dp(32)
+						Label:
 							text: "Shared refund?"
 							color: rgba("#E2E8F0FF")
 							valign: "middle"
@@ -914,16 +927,6 @@
 					pos: self.pos
 					size: self.size
 			TopAppBar:
-				Button:
-					size_hint:	None, None
-					size: dp(44), dp(44)
-					text: "<-"
-					font_name: "DejaVuSans.ttf"
-					font_size: sp(20)
-					background_normal: ""
-					background_color: 0,0,0,0
-					color: rgba("#E2E8F0FF")
-					on_release: app.root.current = "dashboard"
 				Label:
 					text: "Category Totals"
 					color: rgba("#fff1d6")
@@ -1157,7 +1160,7 @@
 						metric_title: "Total Savings"
 						metric_value: root.total_savings_text
 						metric_caption: "Savings+RD+FD+Gold"
-						bg_color: rgba("#1E293BFF")
+						bg_color: rgba("#7C3AEDFF")
 					MetricCard:
 						metric_title: "Liquid Balance"
 						metric_value: root.liquid_balance_text

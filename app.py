@@ -8,7 +8,7 @@ from typing import Dict, List, Sequence
 from kivy.app import App
 from kivy.lang import Builder
 from kivy.metrics import dp
-from kivy.properties import DictProperty, ListProperty, ObjectProperty, StringProperty
+from kivy.properties import DictProperty, ListProperty, ObjectProperty, StringProperty, BooleanProperty
 from kivy.clock import Clock
 from kivy.uix.modalview import ModalView
 from kivy.uix.dropdown import DropDown
@@ -184,15 +184,23 @@ Factory.register("ThemedSpinnerDropdown",cls=ThemedSpinnerDropdown)
 
 
 class AddIncomeDialog(ModalView):
-    """Modal dialog for capturing expense details"""
+    """Modal dialog for capturing income details"""
     parent_screen = ObjectProperty(None)
-    amount_input=ObjectProperty(None)
+    amount_input = ObjectProperty(None)
     description_input = ObjectProperty(None)
     device_spinner = ObjectProperty(None)
     date_input = ObjectProperty(None)
+    cash_toggle = BooleanProperty(False)
     shared_checkbox = ObjectProperty(None)
     shared_participants_input = ObjectProperty(None)
     shared_notes_input = ObjectProperty(None)
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.register_event_type('on_cash_toggle')
+        
+    def on_cash_toggle(self, *args):
+        pass
 
     @staticmethod
     def _parse_shared_entries(raw_text: str) -> List[SharedSplit]:
@@ -208,12 +216,25 @@ class AddIncomeDialog(ModalView):
             print("Invalid Amount")
             return
 
-        category_text = ""
-        device_text_raw = (self.device_spinner.text or "").strip()
-        device_code = device_text_raw
-        if device_text_raw.lower() == "savings withdraw" or device_text_raw.lower() == "taken from savings":
-            device_code = "SAVINGS_WITHDRAW"
-            category_text = "Taken from Savings"
+        # Debug the cash toggle state
+        cash_toggle_active = getattr(self, 'cash_toggle', False)
+        print(f"Cash toggle active: {cash_toggle_active}")
+        
+        # Set device to CASH if the toggle is on, otherwise use the selected device
+        if cash_toggle_active:
+            device = "CASH"
+            category_text = ""
+            print(f"Setting device to CASH for amount: {amount}")
+        else:
+            device_text = (self.device_spinner.text or "").strip()
+            device = device_text.upper()
+            # Only apply savings withdrawal logic if not a cash transaction
+            if device_text.lower() in ("savings withdraw", "taken from savings"):
+                device = "SAVINGS_WITHDRAW"
+                category_text = "Taken from Savings"
+            else:
+                category_text = ""
+            print(f"Using device: {device}")
 
         txn_date = _parse_date_or_today(self.date_input.text if self.date_input else "")
 
@@ -222,11 +243,14 @@ class AddIncomeDialog(ModalView):
         shared_splits = self._parse_shared_entries(participants_text) if shared_flag else []
         shared_notes = self.shared_notes_input.text.strip() if (self.shared_notes_input and shared_flag) else ""
 
+        # Debug output
+        print(f"Submitting income - Amount: {amount}, Device: {device}, Is Cash: {device == 'CASH'}")
+
         self.parent_screen.submit_income(
             amount=amount,
             description=self.description_input.text.strip(),
             category=category_text,
-            device=device_code,
+            device=device,  # This will be "CASH" if the toggle is on
             txn_date=txn_date,
             shared_flag=shared_flag,
             shared_splits=shared_splits,
