@@ -246,18 +246,58 @@ def compute_cash_balance(transactions: Sequence[Transaction], initial_cash_balan
     return round(balance, 2)
 
 def compute_outstanding_debt(transactions: Sequence[Transaction]) -> float:
-    """Aggregate outstanding debt from credit-card flows."""
-    debt_total = 0.0
+    """Calculate outstanding debt, but return 0 if a reset marker exists.
+    
+    Returns:
+        float: The outstanding debt amount, which will be 0 if a reset marker exists,
+              otherwise the calculated debt amount.
+    """
+    # Find all reset transactions
+    reset_dates = []
     for tx in transactions:
-        if tx.sub_type == DEFAULT_CREDIT_CARD_DEBT_SUB_TYPE:
+        if (hasattr(tx, 'description') and 
+            getattr(tx, 'description', '') == "CREDIT CARD DEBT RESET"):
+            reset_dates.append(tx.date)
+    
+    # If there are any reset transactions, only consider transactions after the last reset
+    if reset_dates:
+        last_reset = max(reset_dates)
+        transactions = [tx for tx in transactions if tx.date >= last_reset]
+    
+    # Track processed transaction IDs to avoid double-counting
+    processed_ids = set()
+    debt_total = 0.0
+    
+    for tx in transactions:
+        # Skip reset transactions in the calculation
+        if hasattr(tx, 'description') and getattr(tx, 'description', '') == "CREDIT CARD DEBT RESET":
+            debt_total = 0.0  # Reset to zero when we see a reset transaction
+            continue
+            
+        # Skip if we've already processed this transaction
+        if hasattr(tx, 'id') and tx.id in processed_ids:
+            continue
+            
+        # Handle credit card debt transactions (these are the debt portions)
+        if hasattr(tx, 'sub_type') and tx.sub_type == DEFAULT_CREDIT_CARD_DEBT_SUB_TYPE:
             if tx.tx_type == "income":
                 debt_total += tx.amount
-            elif tx.tx_type == "expense":
-                debt_total -= tx.amount
-        
-        elif tx.sub_type == CREDIT_CARD_PAYMENT_SUB_TYPE and tx.tx_type == "expense":
+                if hasattr(tx, 'id'):
+                    processed_ids.add(tx.id)
+            
+        # Handle credit card payments (reduce debt)
+        elif hasattr(tx, 'sub_type') and tx.sub_type == CREDIT_CARD_PAYMENT_SUB_TYPE and tx.tx_type == "expense":
             debt_total -= tx.amount
-    return round(max(debt_total,0.0), 2)
+            if hasattr(tx, 'id'):
+                processed_ids.add(tx.id)
+                
+        # Skip regular credit card expenses as they are already counted in the debt transaction
+        elif hasattr(tx, 'device') and tx.device in CREDIT_CARD_DEVICES and tx.tx_type == "expense":
+            if hasattr(tx, 'id'):
+                processed_ids.add(tx.id)
+            continue
+    
+    return round(debt_total, 2)
 
 def compute_savings_totals(transactions: Sequence[Transaction]) -> Dict[str, float]:
     """Aggregate savings-related flows, including withdrawals."""

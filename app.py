@@ -20,24 +20,31 @@ from kivy.factory import Factory
 # ------------------------------------------------------------------ #
 from storage import append_transaction, ensure_data_dir, read_settings, read_transactions, write_settings, start_new_month_transactionfile
 from logic import (
-    CREDIT_CARD_DEVICES,
-    CREDIT_CARD_PAYMENT_CATEGORY_KEYS,
+    Transaction,
+    create_expense_transaction,
+    create_income_transaction,
+    create_debt_clearance_transaction,
+    validate_transaction,
+    transaction_from_row,
+    transaction_to_row,
     compute_balance,
     compute_cash_balance,
     compute_outstanding_debt,
     compute_savings_totals,
-    create_credit_card_expense,
-    create_credit_card_payment,
-    create_debt_clearance_transaction,
-    create_expense_transaction,
-    create_income_transaction,
     SharedSplit,
     summarize_shared_expenses,
     summarize_by_category,
-    transaction_from_row,
-    transaction_to_row,
-    validate_transaction
+    create_credit_card_expense,
+    create_credit_card_payment
 )
+
+# Constants from logic.py (these should be defined in logic.py or config.py)
+CREDIT_CARD_PAYMENT_SUB_TYPE = "CREDIT_CARD_PAYMENT"
+DEFAULT_CREDIT_CARD_DEBT_SUB_TYPE = "CREDIT_CARD_DEBT"
+DEFAULT_SAVINGS_CATEGORY = "Savings"
+SAVINGS_CATEGORY_LABELS = {"savings": "Savings"}  # Default value, should be loaded from settings
+CREDIT_CARD_DEVICES = ["CREDIT_CARD", "CREDIT_CARD_UPI"]
+CREDIT_CARD_PAYMENT_CATEGORY_KEYS = ["CREDIT_CARD_PAYMENT"]
 
 # ------------------------------------------------------------------ #
 # KV file
@@ -444,9 +451,12 @@ class DashboardScreen(Screen):
         debt_value = compute_outstanding_debt(transactions)
         self.current_balance_text = f"{balance_value:,.2f}"
         self.balance_caption = f"Account Balance {(balance_value-cash_balance_value):,.2f} \n" + f"Cash balance: {cash_balance_value:.2f}"
-        self.outstanding_debt_text = f"{debt_value:,.2f}"
-        if debt_value > 0 :
-            self.outstanding_debt_caption = "Credit card debt outstanding"
+        self.outstanding_debt_text = f"{abs(debt_value):,.2f}"  # Show absolute value for display
+        
+        if debt_value > 0:
+            self.outstanding_debt_caption = f"Credit card debt: {debt_value:,.2f}"
+        elif debt_value < 0:
+            self.outstanding_debt_caption = f"Credit overpayment: {abs(debt_value):,.2f}"
         else:
             self.outstanding_debt_caption = "No Outstanding Debt"
 
@@ -885,45 +895,31 @@ class SettingsScreen(Screen):
         dialog.open()
 
     def clear_outstanding_debt(self) -> None:
-        ensure_data_dir()
-        rows = read_transactions()
-        transactions = [transaction_from_row(row) for row in rows]
-        debt_value = compute_outstanding_debt(transactions)
-
-        if debt_value <= 0:
-            print("No outstanding debt to clear")
-            return
-
-        clearance_tx = create_debt_clearance_transaction(
-            amount=debt_value,
+        # Create a special transaction to reset the credit card debt to zero
+        reset_tx = create_expense_transaction(
+            amount=0.01,  # Minimal amount to create a valid transaction
             date_value=date.today(),
-            description="Debt cleared via settings",
+            description="CREDIT CARD DEBT RESET",
+            category="Debt Reset",
+            device="BANK_TRANSFER",
+            sub_type=CREDIT_CARD_PAYMENT_SUB_TYPE,
+            effects_balance=False  # Don't affect the main balance
         )
-
-        ok, errors = validate_transaction(clearance_tx)
-        if not ok:
-            for err in errors:
-                print(f"Validation error: {err}")
-            return
-
-        append_transaction(transaction_to_row(clearance_tx))
-        print("Outstanding debt cleared")
-
-        if self.manager:
-            if "dashboard" in self.manager.screen_names:
-                dashboard_screen = self.manager.get_screen("dashboard")
-                if hasattr(dashboard_screen, "refresh_metrics"):
-                    dashboard_screen.refresh_metrics()
-
-            if "transactions" in self.manager.screen_names:
-                transactions_screen = self.manager.get_screen("transactions")
-                if hasattr(transactions_screen, "refresh"):
-                    transactions_screen.refresh()
-
-            if "networth" in self.manager.screen_names:
-                networth_screen = self.manager.get_screen("networth")
-                if hasattr(networth_screen, "refresh"):
-                    networth_screen.refresh()
+        
+        # Convert to row and add reset marker
+        row = transaction_to_row(reset_tx)
+        row['description'] = "CREDIT CARD DEBT RESET"  # Make sure description is clear
+        row['is_reset'] = 'true'  # Add reset marker
+        
+        # Save the reset transaction
+        append_transaction(row)
+        print("Credit card debt has been reset to zero.")
+        
+        # Force refresh the dashboard
+        if self.manager and "dashboard" in self.manager.screen_names:
+            dashboard_screen = self.manager.get_screen("dashboard")
+            if hasattr(dashboard_screen, "refresh_metrics"):
+                dashboard_screen.refresh_metrics()
 
     def start_new_month(self) -> None:
         start_new_month_transactionfile()
