@@ -709,7 +709,8 @@
 
 
 <TransactionRow@BoxLayout>:
-	date_text : ""
+	transaction_id: ""
+	date_text: ""
 	category_text: ""
 	description_text: ""
 	device_text: ""
@@ -719,8 +720,8 @@
 	orientation: "horizontal"
 	size_hint_y: None
 	height: dp(72)
-	padding: dp(16)
-	spacing: dp(16)
+	padding: [dp(16), dp(16), dp(8), dp(16)]
+	spacing: dp(12)
 	canvas.before:
 		Color:
 			rgba: (26/255, 32/255, 45/255, 0.6)
@@ -776,6 +777,16 @@
 			text_size: self.size
 			valign: "middle"
 			opacity: 1 if root.shared_text else 0
+	Button:
+		size_hint: None, None
+		size: dp(24), dp(24)
+		background_normal: ""
+		background_color: 0, 0, 0, 0
+		color: rgba("#FCA5A5FF")
+		text: "X"
+		font_size: sp(16)
+		bold: True
+		on_release: app.root.get_screen("transactions").delete_transaction(root.transaction_id)
 
 <CategorySummaryRow@BoxLayout>:
 	category_text: ""
@@ -1515,6 +1526,17 @@
 		text_size: self.width, None
 		size_hint_y: None
 		height: self.texture_size[1] if self.texture_size[1] > 0 else dp(16)
+	Button:
+		size_hint: None, None
+		size: dp(24), dp(24)
+		background_normal: ""
+		background_color: 0, 0, 0, 0
+		color: rgba("#FCA5A5FF")
+		text: "✕"
+		font_size: sp(16)
+		bold: True
+		pos_hint: {'right': 1, 'top': 1}
+		on_release: app.root.get_screen("transactions").delete_transaction(root.transaction_id)
 	Label:
 		text: root.share_text
 		color: rgba("#86EFACFF")

@@ -1,7 +1,7 @@
 """MoneyTracker – Final, Working, Modern UI"""
 
 from __future__ import annotations
-
+import csv
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Sequence
@@ -18,7 +18,15 @@ from kivy.factory import Factory
 # ------------------------------------------------------------------ #
 # Storage & Logic
 # ------------------------------------------------------------------ #
-from storage import append_transaction, ensure_data_dir, read_settings, read_transactions, write_settings, start_new_month_transactionfile
+from storage import (
+    append_transaction, 
+    ensure_data_dir, 
+    read_settings, 
+    read_transactions, 
+    write_settings, 
+    start_new_month_transactionfile,
+    CSV_COLUMNS
+)
 from logic import (
     Transaction,
     compute_balance,
@@ -852,6 +860,7 @@ class TransactionsScreen(Screen):
                     "amount_text": f"{sign}{tx.amount:,.2f}",
                     "amount_color" : amount_color,
                     "shared_text": self._format_shared_text(tx),
+                    "transaction_id": tx.id  # Add transaction ID for deletion
                 }
             )
 
@@ -883,6 +892,47 @@ class TransactionsScreen(Screen):
         if tx.shared_notes:
             return f"{base} | {tx.shared_notes}"
         return base
+        
+    def delete_transaction(self, transaction_id: str) -> None:
+        """Delete a transaction by its ID and refresh the list."""
+        # Read all transactions
+        rows = read_transactions()
+        
+        # Filter out the transaction to delete
+        updated_rows = [row for row in rows if row['id'] != transaction_id]
+        
+        # If no transaction was deleted, do nothing
+        if len(updated_rows) == len(rows):
+            print(f"No transaction found with ID: {transaction_id}")
+            return
+            
+        # Write the updated transactions back to the file
+        with open('data/transactions.csv', 'w', newline='', encoding='utf-8') as f:
+            writer = csv.DictWriter(f, fieldnames=CSV_COLUMNS)
+            writer.writeheader()
+            writer.writerows(updated_rows)
+            
+        print(f"Deleted transaction with ID: {transaction_id}")
+        
+        # Refresh the transactions list
+        self.refresh()
+        
+        # Refresh other screens if they exist
+        if self.manager:
+            if "dashboard" in self.manager.screen_names:
+                dashboard = self.manager.get_screen("dashboard")
+                if hasattr(dashboard, 'refresh_metrics'):
+                    dashboard.refresh_metrics()
+                    
+            if "category_totals" in self.manager.screen_names:
+                category_screen = self.manager.get_screen("category_totals")
+                if hasattr(category_screen, 'refresh'):
+                    category_screen.refresh()
+                    
+            if "networth" in self.manager.screen_names:
+                networth_screen = self.manager.get_screen("networth")
+                if hasattr(networth_screen, 'refresh'):
+                    networth_screen.refresh()
 
 
 class NetWorthScreen(Screen):
