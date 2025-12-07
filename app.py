@@ -88,7 +88,7 @@ class AddExpenseDialog(ModalView):
                 continue
             if ":" in part:
                 name_raw, amount_raw = part.split(":", 1)
-                name = name_raw.strip()
+                name = name_raw.strip().lower()  # Convert name to lowercase
                 if not name:
                     continue
                 try:
@@ -97,7 +97,7 @@ class AddExpenseDialog(ModalView):
                     amount = None
                 entries.append(SharedSplit(name=name, amount=amount))
             else:
-                entries.append(SharedSplit(name=part.strip(), amount=None))
+                entries.append(SharedSplit(name=part.strip().lower(), amount=None))  # Convert name to lowercase
         return entries
 
     def handle_submit(self) -> None:
