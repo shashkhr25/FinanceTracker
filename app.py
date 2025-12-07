@@ -21,29 +21,29 @@ from kivy.factory import Factory
 from storage import append_transaction, ensure_data_dir, read_settings, read_transactions, write_settings, start_new_month_transactionfile
 from logic import (
     Transaction,
-    create_expense_transaction,
-    create_income_transaction,
-    create_debt_clearance_transaction,
-    validate_transaction,
-    transaction_from_row,
-    transaction_to_row,
     compute_balance,
     compute_cash_balance,
     compute_outstanding_debt,
+    create_expense_transaction,
+    create_income_transaction,
+    transaction_from_row,
+    transaction_to_row,
     compute_savings_totals,
     SharedSplit,
     summarize_shared_expenses,
     summarize_by_category,
     create_credit_card_expense,
-    create_credit_card_payment
+    create_credit_card_payment,
+    DEBT_CLEARED_CATEGORY,
+    CREDIT_CARD_PAYMENT_SUB_TYPE,
+    DEFAULT_CREDIT_CARD_DEBT_SUB_TYPE,
+    CREDIT_CARD_DEVICES,
+    SAVINGS_CATEGORY_LABELS,
+    validate_transaction,
 )
 
-# Constants from logic.py (these should be defined in logic.py or config.py)
-CREDIT_CARD_PAYMENT_SUB_TYPE = "CREDIT_CARD_PAYMENT"
-DEFAULT_CREDIT_CARD_DEBT_SUB_TYPE = "CREDIT_CARD_DEBT"
-DEFAULT_SAVINGS_CATEGORY = "Savings"
+# Constants
 SAVINGS_CATEGORY_LABELS = {"savings": "Savings"}  # Default value, should be loaded from settings
-CREDIT_CARD_DEVICES = ["CREDIT_CARD", "CREDIT_CARD_UPI"]
 CREDIT_CARD_PAYMENT_CATEGORY_KEYS = ["CREDIT_CARD_PAYMENT"]
 
 # ------------------------------------------------------------------ #
@@ -467,24 +467,53 @@ class DashboardScreen(Screen):
         cycle_start, cycle_end = self.get_current_billing_cycle()
         self.current_billing_cycle = f"Billing Cycle: {cycle_start.strftime('%d %b')} - {cycle_end.strftime('%d %b %Y')}"
         
-        # Get total outstanding credit card debt
+        # Calculate total outstanding debt
         total_debt = 0.0
+        credit_card_payments = 0.0
+        borrowed_debt = 0.0
+        credit_card_expenses = 0.0
+        
         for row in read_transactions():
             tx = transaction_from_row(row)
-            if not hasattr(tx, 'tx_type') or tx.tx_type != 'expense':
-                continue
-                
-            # Skip if it's a reset transaction
+            
+            # Handle credit card debt reset
             if hasattr(tx, 'description') and "CREDIT CARD DEBT RESET" in tx.description:
+                credit_card_expenses = 0.0
+                credit_card_payments = 0.0
                 continue
                 
-            # Only consider credit card transactions
-            if hasattr(tx, 'device') and tx.device in {"CREDIT_CARD", "CREDIT_CARD_UPI"}:
-                total_debt += abs(tx.amount)
+            # Handle credit card expenses
+            if (hasattr(tx, 'tx_type') and tx.tx_type == 'expense' and 
+                hasattr(tx, 'device') and tx.device in {"CREDIT_CARD", "CREDIT_CARD_UPI"} and
+                not (hasattr(tx, 'description') and 
+                     any(x in tx.description.upper() 
+                         for x in ["PAYMENT", "CLEARED", "RESET"]))):
+                credit_card_expenses += abs(tx.amount)
+                
+            # Handle credit card payments (income transactions with CREDIT CARD PAYMENT in description)
+            elif (hasattr(tx, 'tx_type') and tx.tx_type == 'income' and 
+                  hasattr(tx, 'description') and 
+                  "CREDIT CARD PAYMENT" in tx.description.upper()):
+                credit_card_payments += abs(tx.amount)
+                
+            # Handle borrowed debt
+            elif (hasattr(tx, 'device') and tx.device == "DEBT_BORROWED" and 
+                  tx.tx_type == "expense"):
+                borrowed_debt += abs(tx.amount)
+                
+            # Handle debt cleared
+            elif (hasattr(tx, 'category') and 
+                  tx.category.lower() == DEBT_CLEARED_CATEGORY.lower() and 
+                  tx.tx_type == "expense"):
+                borrowed_debt = max(0, borrowed_debt - abs(tx.amount))
+        
+        # Calculate final debt (credit card debt + borrowed debt)
+        credit_card_debt = max(0, credit_card_expenses - credit_card_payments)
+        total_debt = credit_card_debt + borrowed_debt
         
         # Update the UI with the total debt
         self.outstanding_debt_text = f"{total_debt:,.2f}"
-        self.outstanding_debt_caption = f"Total Credit Card Debt (All Transactions)"
+        self.outstanding_debt_caption = "Total Outstanding Debt"
         
         # Update the main balance display
         self.current_balance_text = f"{balance_value:,.2f}"
@@ -553,71 +582,149 @@ class DashboardScreen(Screen):
             
         return total_debt
 
-    def clear_outstanding_debt(self) -> None:
-        """Clear the outstanding debt for the previous billing cycle."""
-        # Get the previous billing cycle
-        prev_start, prev_end = self.get_previous_billing_cycle()
+    def clear_outstanding_debt(self) -> bool:
+        """Clear the outstanding debt for the previous billing cycle.
+        Returns:
+            bool: True if debt was cleared, False otherwise
+        """
+        print("\n=== Starting debt clearance process ===")
         
-        # Calculate the debt for the previous billing cycle
-        debt_to_clear = self.get_outstanding_balance_for_cycle(prev_start, prev_end)
-        
-        if debt_to_clear <= 0:
-            # No debt to clear
-            self.show_popup('Info', 'No outstanding debt found for the previous billing cycle.')
-            return
+        try:
+            # Get the previous billing cycle
+            prev_start, prev_end = self.get_previous_billing_cycle()
+            print(f"Checking billing cycle: {prev_start} to {prev_end}")
             
-        # Create a payment transaction (income) to offset the debt
-        payment_tx = create_income_transaction(
-            amount=debt_to_clear,
-            date_value=date.today(),
-            description=f"CREDIT CARD PAYMENT - {prev_start.strftime('%d %b')} to {prev_end.strftime('%d %b %Y')}",
-            category="Credit Card Payment",
-            device="BANK_TRANSFER",
-            sub_type=CREDIT_CARD_PAYMENT_SUB_TYPE,
-            effects_balance=True
-        )
-        
-        # Convert to row and add payment marker
-        row = transaction_to_row(payment_tx)
-        row['is_payment'] = 'true'
-        
-        # Save the payment transaction
-        append_transaction(row)
-        print(f"Paid {debt_to_clear:.2f} for credit card billing cycle {prev_start.strftime('%d %b')} to {prev_end.strftime('%d %b %Y')}")
-        
-        # Create a reset transaction to clear the debt
-        reset_tx = create_expense_transaction(
-            amount=0.01,  # Minimal amount
-            date_value=date.today(),
-            description="CREDIT CARD DEBT RESET",
-            category="Debt Reset",
-            device="BANK_TRANSFER",
-            sub_type=CREDIT_CARD_PAYMENT_SUB_TYPE,
-            effects_balance=True
-        )
-        reset_row = transaction_to_row(reset_tx)
-        reset_row['is_reset'] = 'true'
-        append_transaction(reset_row)
-        
-        # Force reload of transactions and refresh UI
-        from kivy.clock import Clock
-        Clock.schedule_once(lambda dt: self._finalize_debt_clearance(prev_start, prev_end, debt_to_clear), 0.1)
+            # Get all transactions
+            rows = read_transactions()
+            print(f"Found {len(rows)} total transactions")
+            transactions = [transaction_from_row(row) for row in rows]
+            
+            # Calculate total credit card debt from the previous billing cycle
+            total_debt = 0.0
+            credit_card_txns = []
+            
+            for tx in transactions:
+                # Skip if not in the previous billing cycle
+                tx_date = getattr(tx, 'date_value', date.min)
+                if not (prev_start <= tx_date <= prev_end):
+                    continue
+                    
+                # Count credit card expenses (excluding payments and resets)
+                if (hasattr(tx, 'tx_type') and tx.tx_type == 'expense' and 
+                    hasattr(tx, 'device') and tx.device in {"CREDIT_CARD", "CREDIT_CARD_UPI"} and
+                    not (hasattr(tx, 'description') and 
+                         any(x in tx.description.upper() 
+                             for x in ["PAYMENT", "CLEARED", "RESET"]))):
+                    amount = abs(getattr(tx, 'amount', 0))
+                    total_debt += amount
+                    credit_card_txns.append(tx)
+                    print(f"Found credit card expense: {getattr(tx, 'description', '')} - ₹{amount}")
+                    
+                # Subtract any payments made in this cycle
+                elif (hasattr(tx, 'tx_type') and tx.tx_type == 'income' and 
+                      hasattr(tx, 'description') and 
+                      "CREDIT CARD PAYMENT" in tx.description.upper() and
+                      prev_start <= tx_date <= prev_end):
+                    payment = abs(getattr(tx, 'amount', 0))
+                    total_debt = max(0, total_debt - payment)
+                    print(f"Found existing credit card payment: ₹{payment}")
+            
+            print(f"\n=== Debt Calculation Summary ===")
+            print(f"Total credit card expenses: ₹{total_debt:.2f}")
+            print(f"Number of credit card transactions: {len(credit_card_txns)}")
+            
+            if total_debt <= 0:
+                print("No debt to clear")
+                self.show_popup('Info', 'No outstanding credit card debt found for the previous billing cycle.')
+                return False
+            
+            print(f"\nCreating payment transaction for amount: ₹{total_debt:.2f}")
+            
+            # Create a payment transaction (expense) to clear the debt
+            payment_desc = f"CREDIT CARD PAYMENT - {prev_start.strftime('%d %b')} to {prev_end.strftime('%d %b %Y')}"
+            print(f"Payment description: {payment_desc}")
+            
+            # First, create an income transaction to record the payment
+            payment_tx = create_income_transaction(
+                amount=total_debt,
+                date_value=date.today(),
+                description=payment_desc,
+                category="Credit Card Payment",
+                device="BANK_TRANSFER",
+                sub_type=CREDIT_CARD_PAYMENT_SUB_TYPE,
+                effects_balance=True
+            )
+            
+            # Then create an expense transaction to clear the debt
+            clearance_tx = create_expense_transaction(
+                amount=total_debt,
+                date_value=date.today(),
+                description=f"DEBT CLEARED - {payment_desc}",
+                category=DEBT_CLEARED_CATEGORY,
+                device="BANK_TRANSFER",
+                sub_type=CREDIT_CARD_PAYMENT_SUB_TYPE,
+                effects_balance=True
+            )
+            
+            print(f"Created payment transaction: {payment_tx}")
+            
+            # Convert to rows and add payment markers
+            payment_row = transaction_to_row(payment_tx)
+            clearance_row = transaction_to_row(clearance_tx)
+            print(f"Converted payment to row: {payment_row}")
+            print(f"Converted clearance to row: {clearance_row}")
+            
+            # Save both transactions
+            print("Saving payment and clearance transactions...")
+            append_transaction(payment_row)
+            append_transaction(clearance_row)
+            print("Transactions saved successfully")
+            
+            # Force refresh transactions
+            print("Refreshing transactions...")
+            global _transactions_cache
+            _transactions_cache = None  # Clear cache
+            
+            # Mark that we've cleared the debt for this month
+            print("Marking debt as cleared...")
+            self.mark_debt_cleared()
+            
+            # Force refresh transactions and update the UI
+            print("Refreshing transactions and UI...")
+            _transactions_cache = None  # Clear cache
+            self.refresh_metrics()
+            
+            # Show confirmation message
+            message = (
+                f"Payment of ₹{total_debt:,.2f} recorded\n"
+                f"Billing cycle: {prev_start.strftime('%d %b')} to {prev_end.strftime('%d %b %Y')}"
+            )
+            self.show_popup('Payment Recorded', message)
+            
+            # Refresh all screens
+            if self.manager:
+                for screen_name in ["transactions", "category_totals", "networth", "dashboard"]:
+                    if screen_name in self.manager.screen_names:
+                        screen = self.manager.get_screen(screen_name)
+                        if hasattr(screen, "refresh"):
+                            screen.refresh()
+                            print(f"Refreshed screen: {screen_name}")
+            
+            print("\n=== Debt clearance completed successfully ===\n")
+            return True
+            
+        except Exception as e:
+            import traceback
+            error_msg = f"Error clearing debt: {str(e)}\n\n{traceback.format_exc()}"
+            print(error_msg)
+            self.show_popup('Error', 'Failed to clear debt. Check console for details.')
+            return False
     
     def _finalize_debt_clearance(self, prev_start, prev_end, debt_to_clear):
         """Finalize the debt clearance process after a short delay."""
-        # Force reload of transactions
-        rows = read_transactions()
-        transactions = [transaction_from_row(row) for row in rows]
-        
-        # Update the UI with the new debt amount
-        self.refresh_metrics()
-        
-        # Show a confirmation message with the billing cycle and amount
-        message = (
-            f"Payment of ₹{debt_to_clear:,.2f} recorded\n"
-            f"Billing cycle: {prev_start.strftime('%d %b')} to {prev_end.strftime('%d %b %Y')}"
-        )
-        self.show_popup('Payment Recorded', message)
+        # This method is kept for backward compatibility but is no longer used
+        # as the functionality has been moved to clear_outstanding_debt
+        pass
         
     def should_clear_debt(self) -> bool:
         """Check if we should clear the credit card debt (19th of each month)."""
@@ -1128,19 +1235,47 @@ class SettingsScreen(Screen):
         if self.manager and "dashboard" in self.manager.screen_names:
             dashboard_screen = self.manager.get_screen("dashboard")
             if hasattr(dashboard_screen, "clear_outstanding_debt"):
-                dashboard_screen.clear_outstanding_debt()
-                # Show a confirmation popup
+                # Call the method and check if it was successful
+                success = dashboard_screen.clear_outstanding_debt()
+                
+                # Show appropriate popup based on success
                 from kivy.uix.popup import Popup
                 from kivy.uix.label import Label
-                
-                popup = Popup(title='Success',
-                            content=Label(text='Credit card debt has been reset to zero.'),
-                            size_hint=(None, None), size=(400, 200))
-                popup.open()
-                
-                # Close the popup after 2 seconds
                 from kivy.clock import Clock
-                Clock.schedule_once(lambda dt: popup.dismiss(), 2)
+                
+                if success:
+                    popup = Popup(
+                        title='Success',
+                        content=Label(
+                            text='Credit card debt has been cleared for the previous billing cycle.',
+                            halign='center',
+                            valign='middle'
+                        ),
+                        size_hint=(None, None), 
+                        size=(400, 200)
+                    )
+                else:
+                    popup = Popup(
+                        title='Info',
+                        content=Label(
+                            text='No outstanding credit card debt found to clear.',
+                            halign='center',
+                            valign='middle'
+                        ),
+                        size_hint=(None, None), 
+                        size=(400, 200)
+                    )
+                
+                popup.open()
+                # Close the popup after 3 seconds
+                Clock.schedule_once(lambda dt: popup.dismiss(), 3)
+                
+                # Refresh all screens
+                for screen_name in ["transactions", "category_totals", "networth", "dashboard"]:
+                    if screen_name in self.manager.screen_names:
+                        screen = self.manager.get_screen(screen_name)
+                        if hasattr(screen, "refresh"):
+                            screen.refresh()
 
     def start_new_month(self) -> None:
         start_new_month_transactionfile()
