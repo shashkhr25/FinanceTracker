@@ -952,18 +952,19 @@ class TransactionsScreen(Screen):
             return
         
         # Determine if it's an income or expense
-        is_income = transaction_to_edit.get('type', '').lower() == 'income'
+        is_income = transaction_to_edit.get('tx_type', '').lower() == 'income'
         
         # Use the appropriate dialog based on transaction type
         if is_income:
             dialog = AddIncomeDialog()
             # Set the cash toggle if needed
             if hasattr(dialog, 'cash_toggle'):
-                dialog.cash_toggle = transaction_to_edit.get('device', '').upper() == 'CASH'
+                dialog.cash_toggle = transaction_to_edit.get('device', '').lower() == 'cash'
         else:
             dialog = AddExpenseDialog()
         
         dialog.parent_screen = self
+        dialog.transaction_id = transaction_id  # Store the transaction ID for saving
         
         # Set the title based on transaction type
         dialog.title = f"Edit {'Income' if is_income else 'Expense'}"
@@ -980,29 +981,73 @@ class TransactionsScreen(Screen):
         
         # Handle device selection
         if hasattr(dialog, 'device_spinner') and dialog.device_spinner:
-            device = transaction_to_edit.get('device', '').upper()
-            if device in dialog.device_spinner.values:
-                dialog.device_spinner.text = device
-        
-        # Handle category for expenses
-        if not is_income and hasattr(dialog, 'category_input') and dialog.category_input:
-            category = transaction_to_edit.get('category', '')
-            if category in dialog.category_input.values:
-                dialog.category_input.text = category
+            device = transaction_to_edit.get('device', '')
+            # For income, we need to handle the device spinner differently
+            if is_income:
+                # Map the device to the appropriate value in the income dialog
+                if device.upper() == 'CASH':
+                    dialog.device_spinner.text = 'Paycheck'  # Default for cash income
+                    if hasattr(dialog, 'cash_toggle'):
+                        dialog.cash_toggle = True
+                else:
+                    dialog.device_spinner.text = device.capitalize() if device else 'Paycheck'
+            else:
+                # For expenses, just set the device as is
+                if device.upper() in [d.upper() for d in dialog.device_spinner.values]:
+                    dialog.device_spinner.text = device.upper()
+                elif device:  # If device not in standard values but exists, add it
+                    dialog.device_spinner.values = list(dialog.device_spinner.values) + [device.upper()]
+                    dialog.device_spinner.text = device.upper()
         
         # Handle shared transaction fields
-        shared_flag = transaction_to_edit.get('shared', '').lower() == 'true'
+        shared_flag = transaction_to_edit.get('shared_flag', 'false').lower() == 'true'
         if hasattr(dialog, 'shared_checkbox'):
             dialog.shared_checkbox.active = shared_flag
             
-            if shared_flag and hasattr(dialog, 'shared_participants_input'):
-                dialog.shared_participants_input.text = transaction_to_edit.get('shared_participants', '')
+            if hasattr(dialog, 'shared_participants_input'):
+                if shared_flag:
+                    # Get the shared splits if they exist
+                    shared_splits = transaction_to_edit.get('shared_splits', '')
+                    if shared_splits:
+                        try:
+                            # Parse the shared splits if they're in JSON format
+                            import json
+                            splits = json.loads(shared_splits)
+                            if isinstance(splits, list) and all(isinstance(s, dict) for s in splits):
+                                # Format as name:amount or just name
+                                parts = []
+                                for s in splits:
+                                    if 'amount' in s and s['amount'] not in (None, ''):
+                                        parts.append(f"{s['name']}:{s['amount']}")
+                                    else:
+                                        parts.append(s['name'])
+                                dialog.shared_participants_input.text = ", ".join(parts)
+                            else:
+                                dialog.shared_participants_input.text = str(shared_splits)
+                        except (json.JSONDecodeError, TypeError):
+                            dialog.shared_participants_input.text = str(shared_splits)
+                    else:
+                        dialog.shared_participants_input.text = transaction_to_edit.get('shared_participants', '')
                 
-            if shared_flag and hasattr(dialog, 'shared_notes_input'):
-                dialog.shared_notes_input.text = transaction_to_edit.get('shared_notes', '')
+                # Show/hide the shared fields based on the shared flag
+                if hasattr(dialog, 'shared_notes_input'):
+                    dialog.shared_notes_input.text = transaction_to_edit.get('shared_notes', '')
+                    dialog.shared_notes_input.disabled = not shared_flag
+                    dialog.shared_notes_input.opacity = 1.0 if shared_flag else 0.0
+                    
+                    # Force update the layout to show/hide the shared fields
+                    if hasattr(dialog, 'shared_participants_input'):
+                        dialog.shared_participants_input.disabled = not shared_flag
+                        dialog.shared_participants_input.opacity = 1.0 if shared_flag else 0.0
+                        dialog.shared_participants_input.size_hint_y = 1.0 if shared_flag else 0.0
+                        dialog.shared_participants_input.height = dp(46) if shared_flag else 0
+                        
+                        # Trigger a layout update
+                        if dialog.shared_participants_input.parent:
+                            dialog.shared_participants_input.parent.do_layout()
         
-        # Store the transaction ID for saving
-        dialog.transaction_id = transaction_id
+        # Open the dialog
+        dialog.open()
         
         # Override the submit handler to use our custom save method
         original_handle_submit = dialog.handle_submit
