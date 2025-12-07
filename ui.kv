@@ -1053,6 +1053,16 @@
 				size_hint_y: None
 				height: dp(44)
 				spacing: dp(12)
+				Button:
+                    id: sort_button
+                    text: "Sort: Newest First"
+                    size_hint_x: 0.5
+                    background_normal: ""
+                    background_color: rgba("#4B5563FF")
+                    color: rgba("#E2E8F0FF")
+                    on_release: 
+                        root.toggle_sort_order()
+                        root.update_sort_button_text(self)
 				TextInput:
 					id: filter_text
 					hint_text: "Search description / category / device"

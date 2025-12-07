@@ -467,15 +467,26 @@ class TransactionsScreen(Screen):
     filter_text_input = ObjectProperty(None)
     filter_device_input = ObjectProperty(None)
     filter_category_input = ObjectProperty(None)
+    sort_ascending = BooleanProperty(False)
 
     def on_pre_enter(self, *_) -> None:
         self.refresh()
 
+    def toggle_sort_order(self) -> None:
+        """Toggle between ascending and descending sort order by date."""
+        self.sort_ascending = not self.sort_ascending
+        self.refresh()
+        
+    def update_sort_button_text(self, button):
+        """Update the sort button text based on current sort order."""
+        button.text = f"Sort: {'Oldest First' if self.sort_ascending else 'Newest First'}"
+        
     def refresh(self) -> None:
         ensure_data_dir()
         rows = read_transactions()
         transactions = [transaction_from_row(row) for row in rows]
-        transactions.sort(key=lambda tx: tx.timestamp, reverse = True)
+        # Sort by date (timestamp) with order based on sort_ascending
+        transactions.sort(key=lambda tx: tx.timestamp, reverse=not self.sort_ascending)
 
         text_filter = (self.filter_text_input.text or "").strip().lower() if self.filter_text_input else ""
         device_filter = (self.filter_device_input.text or "").strip().lower() if self.filter_device_input else ""
