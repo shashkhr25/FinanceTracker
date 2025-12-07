@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 import csv
+import os
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Sequence
-from kivy.app import App
+from kivymd.app import MDApp
 from kivy.lang import Builder
 from kivy.metrics import dp
 from kivy.properties import StringProperty, ObjectProperty, BooleanProperty, ListProperty, DictProperty, NumericProperty
@@ -933,6 +934,193 @@ class TransactionsScreen(Screen):
                 networth_screen = self.manager.get_screen("networth")
                 if hasattr(networth_screen, 'refresh'):
                     networth_screen.refresh()
+                    
+    def edit_transaction(self, transaction_id: str) -> None:
+        """Edit a transaction by its ID."""
+        # Read all transactions
+        rows = read_transactions()
+        
+        # Find the transaction to edit
+        transaction_to_edit = None
+        for row in rows:
+            if row['id'] == transaction_id:
+                transaction_to_edit = row
+                break
+                
+        if not transaction_to_edit:
+            print(f"No transaction found with ID: {transaction_id}")
+            return
+        
+        # Determine if it's an income or expense
+        is_income = transaction_to_edit.get('type', '').lower() == 'income'
+        
+        # Use the appropriate dialog based on transaction type
+        if is_income:
+            dialog = AddIncomeDialog()
+            # Set the cash toggle if needed
+            if hasattr(dialog, 'cash_toggle'):
+                dialog.cash_toggle = transaction_to_edit.get('device', '').upper() == 'CASH'
+        else:
+            dialog = AddExpenseDialog()
+        
+        dialog.parent_screen = self
+        
+        # Set the title based on transaction type
+        dialog.title = f"Edit {'Income' if is_income else 'Expense'}"
+        
+        # Pre-fill the form with existing values
+        if hasattr(dialog, 'amount_input') and dialog.amount_input:
+            dialog.amount_input.text = str(transaction_to_edit.get('amount', ''))
+            
+        if hasattr(dialog, 'description_input') and dialog.description_input:
+            dialog.description_input.text = transaction_to_edit.get('description', '')
+            
+        if hasattr(dialog, 'date_input') and dialog.date_input:
+            dialog.date_input.text = transaction_to_edit.get('date', date.today().isoformat())
+        
+        # Handle device selection
+        if hasattr(dialog, 'device_spinner') and dialog.device_spinner:
+            device = transaction_to_edit.get('device', '').upper()
+            if device in dialog.device_spinner.values:
+                dialog.device_spinner.text = device
+        
+        # Handle category for expenses
+        if not is_income and hasattr(dialog, 'category_input') and dialog.category_input:
+            category = transaction_to_edit.get('category', '')
+            if category in dialog.category_input.values:
+                dialog.category_input.text = category
+        
+        # Handle shared transaction fields
+        shared_flag = transaction_to_edit.get('shared', '').lower() == 'true'
+        if hasattr(dialog, 'shared_checkbox'):
+            dialog.shared_checkbox.active = shared_flag
+            
+            if shared_flag and hasattr(dialog, 'shared_participants_input'):
+                dialog.shared_participants_input.text = transaction_to_edit.get('shared_participants', '')
+                
+            if shared_flag and hasattr(dialog, 'shared_notes_input'):
+                dialog.shared_notes_input.text = transaction_to_edit.get('shared_notes', '')
+        
+        # Store the transaction ID for saving
+        dialog.transaction_id = transaction_id
+        
+        # Override the submit handler to use our custom save method
+        original_handle_submit = dialog.handle_submit
+        
+        def handle_submit_wrapper():
+            # Get the transaction data from the dialog
+            try:
+                amount = float(dialog.amount_input.text)
+            except (TypeError, ValueError):
+                print("Invalid amount")
+                return
+                
+            description = dialog.description_input.text.strip()
+            device = dialog.device_spinner.text.strip().upper() if hasattr(dialog, 'device_spinner') else ""
+            category = dialog.category_input.text.strip() if hasattr(dialog, 'category_input') else ""
+            txn_date = _parse_date_or_today(dialog.date_input.text if hasattr(dialog, 'date_input') else "")
+            
+            # Get shared transaction details if available
+            shared_flag = dialog.shared_checkbox.active if hasattr(dialog, 'shared_checkbox') else False
+            shared_participants = dialog.shared_participants_input.text if hasattr(dialog, 'shared_participants_input') else ""
+            shared_notes = dialog.shared_notes_input.text.strip() if hasattr(dialog, 'shared_notes_input') else ""
+            
+            # Save the edited transaction
+            self._save_edited_transaction(
+                transaction_id=dialog.transaction_id,
+                amount=amount,
+                description=description,
+                category=category,
+                device=device,
+                txn_date=txn_date,
+                shared_flag=shared_flag,
+                shared_participants=shared_participants,
+                shared_notes=shared_notes
+            )
+            
+            # Dismiss the dialog
+            dialog.dismiss()
+        
+        # Replace the original submit handler
+        dialog.handle_submit = handle_submit_wrapper
+        
+        # Open the dialog
+        dialog.open()
+        
+    def _save_edited_transaction(
+        self,
+        transaction_id: str,
+        amount: float,
+        description: str,
+        category: str,
+        device: str,
+        txn_date: date,
+        shared_flag: bool = False,
+        shared_participants: str = "",
+        shared_notes: str = ""
+    ) -> None:
+        """Save the edited transaction details."""
+        try:
+            # Read all transactions
+            rows = read_transactions()
+            
+            # Find and update the transaction
+            transaction_updated = False
+            for row in rows:
+                if row['id'] == transaction_id:
+                    # Format amount to 2 decimal places
+                    row['amount'] = f"{amount:.2f}"
+                    row['description'] = description
+                    row['category'] = category
+                    row['device'] = device
+                    row['date'] = txn_date.strftime('%Y-%m-%d')
+                    row['shared_flag'] = '1' if shared_flag else '0'
+                    row['shared_splits'] = shared_participants  # Using shared_splits instead of shared_participants
+                    row['shared_notes'] = shared_notes
+                    transaction_updated = True
+                    break
+            
+            if not transaction_updated:
+                print(f"Error: Transaction with ID {transaction_id} not found")
+                return
+            
+            # Ensure data directory exists
+            os.makedirs('data', exist_ok=True)
+            
+            # Write the updated transactions back to the file
+            with open('data/transactions.csv', 'w', newline='', encoding='utf-8') as f:
+                writer = csv.DictWriter(f, fieldnames=CSV_COLUMNS)
+                writer.writeheader()
+                writer.writerows(rows)
+                
+            print(f"Successfully updated transaction with ID: {transaction_id}")
+            
+            # Dismiss the dialog if it exists
+            if hasattr(self, 'dialog') and self.dialog:
+                self.dialog.dismiss()
+            
+            # Refresh the transactions list and other screens
+            self.refresh()
+            if self.manager:
+                if "dashboard" in self.manager.screen_names:
+                    dashboard = self.manager.get_screen("dashboard")
+                    if hasattr(dashboard, 'refresh_metrics'):
+                        dashboard.refresh_metrics()
+                        
+                if "category_totals" in self.manager.screen_names:
+                    category_screen = self.manager.get_screen("category_totals")
+                    if hasattr(category_screen, 'refresh'):
+                        category_screen.refresh()
+                        
+                if "networth" in self.manager.screen_names:
+                    networth_screen = self.manager.get_screen("networth")
+                    if hasattr(networth_screen, 'refresh'):
+                        networth_screen.refresh()
+                        
+        except ValueError as e:
+            # Show error message if amount is invalid
+            from kivymd.uix.snackbar import Snackbar
+            Snackbar(text=f"Error: {str(e)}").open()
 
 
 class NetWorthScreen(Screen):
@@ -1336,7 +1524,7 @@ class MoneyTrackerScreenManager(ScreenManager):
         """
 
 
-class MoneyTrackerApp(App):
+class MoneyTrackerApp(MDApp):
     config_state = DictProperty({})
     def build(self) -> ScreenManager:
         ensure_data_dir()
