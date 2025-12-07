@@ -79,7 +79,8 @@ def _serialize_shared_splits(splits: Sequence[SharedSplit]) -> str:
 # --- Configuration & Constants ---
 
 ALLOWED_TX_TYPES = {"income", "expense", "transfer"}
-ALLOWED_DEVICES = {"UPI", "CREDIT_CARD", "CREDIT_CARD_UPI", "CASH", "DEBIT", "BANK_TRANSFER", "OTHER", "SAVINGS_WITHDRAW"}
+ALLOWED_DEVICES = {"UPI", "CREDIT_CARD", "CREDIT_CARD_UPI", "CASH", "DEBIT", "BANK_TRANSFER", "OTHER", "SAVINGS_WITHDRAW", "DEBT_BORROWED"}
+DEBT_CLEARED_CATEGORY = "Debt Cleared"
 CREDIT_CARD_DEVICES = {"CREDIT_CARD", "CREDIT_CARD_UPI"}
 DEFAULT_CREDIT_CARD_EXPENSE_SUB_TYPE = "credit_card_expense"
 CREDIT_CARD_PAYMENT_SUB_TYPE = "credit_card_payment"
@@ -216,10 +217,16 @@ def compute_balance(transactions: Sequence[Transaction], initial_balance: float)
     """Compute balance from transactions that affect balance."""
     balance = float(initial_balance)
     for tx in transactions:
+        # Skip transactions that don't affect balance
         if not tx.effects_balance:
             continue
         
+        # Skip credit card related transactions as they're handled separately
         if tx.sub_type in (DEFAULT_CREDIT_CARD_EXPENSE_SUB_TYPE, DEFAULT_CREDIT_CARD_DEBT_SUB_TYPE):
+            continue
+            
+        # Skip debt borrowed transactions
+        if hasattr(tx, 'device') and tx.device == "DEBT_BORROWED":
             continue
 
         if tx.tx_type == "income":
@@ -246,58 +253,82 @@ def compute_cash_balance(transactions: Sequence[Transaction], initial_cash_balan
     return round(balance, 2)
 
 def compute_outstanding_debt(transactions: Sequence[Transaction]) -> float:
-    """Calculate outstanding debt, but return 0 if a reset marker exists.
+    """Calculate outstanding debt, including credit card expenses and borrowed debt.
     
+    Args:
+        transactions: List of transactions to process
+        
     Returns:
-        float: The outstanding debt amount, which will be 0 if a reset marker exists,
-              otherwise the calculated debt amount.
+        Float representing total outstanding debt
     """
-    # Find all reset transactions
-    reset_dates = []
-    for tx in transactions:
-        if (hasattr(tx, 'description') and 
-            getattr(tx, 'description', '') == "CREDIT CARD DEBT RESET"):
-            reset_dates.append(tx.date)
+    debt = 0.0
+    print(f"\n=== Starting debt calculation with {len(transactions)} transactions ===")
     
-    # If there are any reset transactions, only consider transactions after the last reset
-    if reset_dates:
-        last_reset = max(reset_dates)
-        transactions = [tx for tx in transactions if tx.date >= last_reset]
-    
-    # Track processed transaction IDs to avoid double-counting
-    processed_ids = set()
-    debt_total = 0.0
-    
-    for tx in transactions:
-        # Skip reset transactions in the calculation
+    for tx in sorted(transactions, key=lambda x: x.timestamp):
+        # Skip non-credit card transactions that don't affect balance, but always process reset transactions
+        is_credit_card_tx = (hasattr(tx, 'device') and 
+                           tx.device in {"CREDIT_CARD", "CREDIT_CARD_UPI"} and 
+                           tx.tx_type == "expense")
+        is_reset_tx = hasattr(tx, 'description') and "CREDIT CARD DEBT RESET" in tx.description
+                            
+        if not tx.effects_balance and not is_credit_card_tx and not is_reset_tx:
+            print(f"Skipping non-balance-affecting transaction: {tx.description} (ID: {getattr(tx, 'id', 'N/A')})")
+            continue
+            
+        # Check for reset marker
         if hasattr(tx, 'description') and getattr(tx, 'description', '') == "CREDIT CARD DEBT RESET":
-            debt_total = 0.0  # Reset to zero when we see a reset transaction
+            print(f"Resetting debt to 0 (was {debt})")
+            debt = 0.0
             continue
             
-        # Skip if we've already processed this transaction
-        if hasattr(tx, 'id') and tx.id in processed_ids:
-            continue
-            
-        # Handle credit card debt transactions (these are the debt portions)
+        # Debug info
+        tx_info = (
+            f"\nProcessing transaction: {getattr(tx, 'id', 'N/A')} - {getattr(tx, 'description', 'N/A')}\n"
+            f"  Type: {getattr(tx, 'tx_type', 'N/A')}, "
+            f"Amount: {getattr(tx, 'amount', 0)}, "
+            f"Device: {getattr(tx, 'device', 'N/A')}, "
+            f"SubType: {getattr(tx, 'sub_type', 'N/A')}, "
+            f"Category: {getattr(tx, 'category', 'N/A')}"
+        )
+        
+        # Handle credit card debt (from statements)
         if hasattr(tx, 'sub_type') and tx.sub_type == DEFAULT_CREDIT_CARD_DEBT_SUB_TYPE:
             if tx.tx_type == "income":
-                debt_total += tx.amount
-                if hasattr(tx, 'id'):
-                    processed_ids.add(tx.id)
-            
+                old_debt = debt
+                debt += tx.amount
+                print(f"{tx_info}\n  Adding credit card debt: +{tx.amount} (debt: {old_debt} -> {debt})")
+                
         # Handle credit card payments (reduce debt)
         elif hasattr(tx, 'sub_type') and tx.sub_type == CREDIT_CARD_PAYMENT_SUB_TYPE and tx.tx_type == "expense":
-            debt_total -= tx.amount
-            if hasattr(tx, 'id'):
-                processed_ids.add(tx.id)
-                
-        # Skip regular credit card expenses as they are already counted in the debt transaction
-        elif hasattr(tx, 'device') and tx.device in CREDIT_CARD_DEVICES and tx.tx_type == "expense":
-            if hasattr(tx, 'id'):
-                processed_ids.add(tx.id)
-            continue
-    
-    return round(debt_total, 2)
+            old_debt = debt
+            payment = min(debt, tx.amount)
+            debt = max(0, debt - tx.amount)
+            print(f"{tx_info}\n  Processing credit card payment: -{payment} (debt: {old_debt} -> {debt})")
+            
+        # Handle credit card and UPI credit card expenses (add to debt)
+        elif (hasattr(tx, 'device') and 
+              tx.device in {"CREDIT_CARD", "CREDIT_CARD_UPI"} and 
+              tx.tx_type == "expense"):
+            old_debt = debt
+            debt += tx.amount
+            print(f"{tx_info}\n  Adding credit card expense: +{tx.amount} (debt: {old_debt} -> {debt})")
+            
+        # Handle debt borrowed (add to debt, same as credit card but from people)
+        elif hasattr(tx, 'device') and tx.device == "DEBT_BORROWED" and tx.tx_type == "expense":
+            old_debt = debt
+            debt += tx.amount
+            print(f"{tx_info}\n  Adding borrowed debt: +{tx.amount} (debt: {old_debt} -> {debt})")
+            
+        # Handle debt cleared (reduce debt)
+        elif hasattr(tx, 'category') and tx.category.lower() == DEBT_CLEARED_CATEGORY.lower() and tx.tx_type == "expense":
+            old_debt = debt
+            payment = min(debt, tx.amount)
+            debt = max(0, debt - tx.amount)
+            print(f"{tx_info}\n  Processing debt clearance: -{payment} (debt: {old_debt} -> {debt})")
+        else:
+            print(f"{tx_info}\n  Not a debt-related transaction")
+            
+    return round(debt, 2)
 
 def compute_savings_totals(transactions: Sequence[Transaction]) -> Dict[str, float]:
     """Aggregate savings-related flows, including withdrawals."""
@@ -425,8 +456,9 @@ def summarize_shared_expenses(
         if not allocations:
             continue
 
-        # Expenses add to what people owe; income (refunds) reduce it
-        sign = 1.0 if tx.tx_type == "expense" else -1.0
+        # For DEBT_BORROWED, invert the amount to show as negative in shared expenses
+        # For other transactions, expenses add to what people owe; income (refunds) reduce it
+        sign = -1.0 if tx.device == "DEBT_BORROWED" else (1.0 if tx.tx_type == "expense" else -1.0)
 
         if participant_key:
             name_map = {name.lower(): name for name in allocations}
