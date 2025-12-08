@@ -819,8 +819,8 @@ class TransactionsScreen(Screen):
         ensure_data_dir()
         rows = read_transactions()
         transactions = [transaction_from_row(row) for row in rows]
-        # Sort by date (timestamp) with order based on sort_ascending
-        transactions.sort(key=lambda tx: tx.timestamp, reverse=not self.sort_ascending)
+        # Sort by transaction date with order based on sort_ascending
+        transactions.sort(key=lambda tx: tx.date, reverse=not self.sort_ascending)
 
         text_filter = (self.filter_text_input.text or "").strip().lower() if self.filter_text_input else ""
         device_filter = (self.filter_device_input.text or "").strip().lower() if self.filter_device_input else ""
