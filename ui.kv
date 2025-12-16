@@ -1168,92 +1168,114 @@
 					padding: [0, 0, dp(8), 0]  # Add right padding for scrollbar
 
 <NetWorthScreen>:
-	name: "networth"
-	BoxLayout:
-		orientation: "vertical"
-		canvas.before:
-			Color:
-				rgba: rgba("#0B1020FF")
-			Rectangle:
-				pos: self.pos
-				size: self.size
-		TopAppBar:
-			Button:
-				size_hint: None,None
-				size: dp(44), dp(44)
-				text: "<-"
-				font_name: "DejaVuSans.ttf"
-				font_size: sp(20)
-				background_normal: ""
-				background_color: 0,0,0,0
-				color: rgba("#E2E8F0FF")
-				on_release: app.root.current = "dashboard"
-		ScrollView:
-			do_scroll_x: False
-			GridLayout:
-				cols:1
-				size_hint_y: None
-				height: self.minimum_height
-				padding : [dp(24), dp(18), dp(24), dp(24)]
-				spacing: dp(18)
-				Label:
-					text: "Net Worth overview"
-					font_size: sp(20)
-					color: rgba("#FFFFFF")
-					bold: True
-					size_hint_y: None
-					height: self.texture_size[1]
-				BoxLayout:
-					orientation: "horizontal"
-					spacing: dp(16)
-					size_hint_y: None
-					height: dp(150)
-					MetricCard:
-						metric_title: "Total Savings"
-						metric_value: root.total_savings_text
-						metric_caption: "Savings+RD+FD+Gold"
-						bg_color: rgba("#7C3AEDFF")
-					MetricCard:
-						metric_title: "Liquid Balance"
-						metric_value: root.liquid_balance_text
-						metric_caption: "Total Liquid balance for expense"
-						bg_color: rgba("#1E293BFF")
-					MetricCard:
-						metric_title: "Outstanding Debt"
-						metric_value: root.outstanding_debt_text
-						metric_caption: root.outstanding_debt_caption
-						bg_color: rgba("#1E293BFF")
-				BoxLayout:
-					orientation: "horizontal"
-					spacing: dp(16)
-					size_hint_y: None
-					height: dp(130)
-					MetricCard:
-						metric_title: "Savings"
-						metric_value: root.savings_display
-						metric_caption: "Savings Account"
-						bg_color: rgba("#1E293BFF")
-					MetricCard:
-						metric_title: "Savings FD"
-						metric_value: root.savings_fd_display
-						metric_caption: "Savings FD"
-						bg_color: rgba("#1E293BFF")
-					MetricCard:
-						metric_title: "Savings RD"
-						metric_value: root.savings_rd_display
-						metric_caption: "Savings RD"
-						bg_color: rgba("#1E293BFF")
-						spacing: dp(8)
-				BoxLayout:
-					orientation: "horizontal"
-					spacing: dp(16)
-					size_hint_y: None
-					height: dp(130)
-					MetricCard:
-						metric_title: "Savings Gold"
-						metric_value: root.savings_gold_display
-						metric_caption: "Savings Gold"
-						bg_color: rgba("#1E293BFF")
+    name: "networth"
+    BoxLayout:
+        orientation: "vertical"
+        canvas.before:
+            Color:
+                rgba: rgba("#0B1020FF")
+            Rectangle:
+                pos: self.pos
+                size: self.size
+        TopAppBar:
+            Button:
+                size_hint: None, None
+                size: dp(44), dp(44)
+                text: "<-"
+                font_name: "DejaVuSans.ttf"
+                font_size: sp(20)
+                background_normal: ""
+                background_color: 0,0,0,0
+                color: rgba("#E2E8F0FF")
+                on_release: app.root.current = "dashboard"
+            Label:
+                text: "Net Worth"
+                color: rgba("#fff1d6")
+                font_size: sp(20)
+                bold: True
+                text_size: self.size
+                halign: "left"
+                valigh: "middle"
+        ScrollView:
+            do_scroll_x: False
+            BoxLayout:
+                orientation: "vertical"
+                padding: dp(24)
+                spacing: dp(16)
+                size_hint_y: None
+                height: self.minimum_height
+                
+                # Liquid Balance and Total Debt (top row)
+                BoxLayout:
+                    orientation: "horizontal"
+                    size_hint_y: None
+                    height: dp(160)
+                    spacing: dp(18)
+                    
+                    # Liquid Balance
+                    MetricCard:
+                        metric_title: "Liquid Balance"
+                        metric_value: root.liquid_balance_text
+                        metric_caption: root.liquid_balance_caption
+                        bg_color: rgba("#1E293BFF")
+                    
+                    # Credit Card Debt
+                    MetricCard:
+                        metric_title: "Credit Card Debt"
+                        metric_value: root.credit_card_debt_text
+                        metric_caption: root.credit_card_debt_caption
+                        bg_color: rgba("#7C3AEDFF")
+                    # Borrowed Debt
+                    MetricCard:
+                        metric_title: "Money Owed"
+                        metric_value: root.borrowed_debt_text
+                        metric_caption: root.borrowed_debt_caption
+                        bg_color: rgba("#F59E0BFF")
+                
+                # Savings Overview (full width)
+                MetricCard:
+                    size_hint_y: None
+                    height: dp(120)
+                    metric_title: "Total Savings"
+                    metric_value: root.total_savings_text
+                    metric_caption: "Combined value of all savings"
+                    bg_color: rgba("#1E293BFF")
+                
+                # Savings Breakdown (2x2 grid)
+                GridLayout:
+                    cols: 2
+                    spacing: dp(16)
+                    size_hint_y: None
+                    height: dp(240)
+                    
+                    # Regular Savings
+                    MetricCard:
+                        metric_title: "Savings Account"
+                        metric_value: root.savings_display
+                        metric_caption: "Regular savings"
+                        bg_color: rgba("#1E293BFF")
+                    
+                    # Fixed Deposit
+                    MetricCard:
+                        metric_title: "Fixed Deposit"
+                        metric_value: root.savings_fd_display
+                        metric_caption: "Fixed deposits"
+                        bg_color: rgba("#1E293BFF")
+                    
+                    # Recurring Deposit
+                    MetricCard:
+                        metric_title: "Recurring Deposit"
+                        metric_value: root.savings_rd_display
+                        metric_caption: "RD accounts"
+                        bg_color: rgba("#1E293BFF")
+                    
+                    # Gold
+                    MetricCard:
+                        metric_title: "Gold"
+                        metric_value: root.savings_gold_display
+                        metric_caption: "Gold investments"
+                        bg_color: rgba("#1E293BFF")
+
 <SettingsScreen>:
 	name: "settings"
 	initial_balance_input: initial_balance_input

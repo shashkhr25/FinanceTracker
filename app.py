@@ -281,6 +281,10 @@ class DashboardScreen(Screen):
     balance_caption = StringProperty("")
     outstanding_debt_text = StringProperty("0.00")
     outstanding_debt_caption = StringProperty("")
+    credit_card_debt_text = StringProperty("0.00")
+    credit_card_debt_caption = StringProperty("")
+    borrowed_debt_text = StringProperty("0.00")
+    borrowed_debt_caption = StringProperty("")
     current_billing_cycle = StringProperty("")
 
     def on_pre_enter(self, *_) -> None:
@@ -327,21 +331,23 @@ class DashboardScreen(Screen):
                     date_value=txn_date,
                     description=description,
                     category=category,
-                    device=cleaned_device or "BANK_TRANSFER",
+                    device="CREDIT_CARD",  # Explicitly set to CREDIT_CARD for payments
                 )
             )
-        elif cleaned_device in CREDIT_CARD_DEVICES:
+        elif "credit card" in description.lower() or "creditcard" in description.lower() or cleaned_device in CREDIT_CARD_DEVICES:
+            # If description indicates it's a credit card transaction, ensure correct device
+            device = "CREDIT_CARD_UPI" if "upi" in description.lower() or cleaned_device == "CREDIT_CARD_UPI" else "CREDIT_CARD"
             expense_tx, debt_tx = create_credit_card_expense(
-                amount = amount,
+                amount=amount,
                 date_value=txn_date,
                 description=description,
                 category=category,
-                device=cleaned_device,
+                device=device,
                 shared_flag=shared_flag,
                 shared_splits=shared_splits,
                 shared_notes=shared_notes,
             )
-            transactions.extend([expense_tx,debt_tx])
+            transactions.extend([expense_tx, debt_tx])
         else:
             transactions.append(
                 create_expense_transaction(
@@ -476,51 +482,18 @@ class DashboardScreen(Screen):
         cycle_start, cycle_end = self.get_current_billing_cycle()
         self.current_billing_cycle = f"Billing Cycle: {cycle_start.strftime('%d %b')} - {cycle_end.strftime('%d %b %Y')}"
         
-        # Calculate total outstanding debt
-        total_debt = 0.0
-        credit_card_payments = 0.0
-        borrowed_debt = 0.0
-        credit_card_expenses = 0.0
-        
-        for row in read_transactions():
-            tx = transaction_from_row(row)
-            
-            # Handle credit card debt reset
-            if hasattr(tx, 'description') and "CREDIT CARD DEBT RESET" in tx.description:
-                credit_card_expenses = 0.0
-                credit_card_payments = 0.0
-                continue
-                
-            # Handle credit card expenses
-            if (hasattr(tx, 'tx_type') and tx.tx_type == 'expense' and 
-                hasattr(tx, 'device') and tx.device in {"CREDIT_CARD", "CREDIT_CARD_UPI"} and
-                not (hasattr(tx, 'description') and 
-                     any(x in tx.description.upper() 
-                         for x in ["PAYMENT", "CLEARED", "RESET"]))):
-                credit_card_expenses += abs(tx.amount)
-                
-            # Handle credit card payments (income transactions with CREDIT CARD PAYMENT in description)
-            elif (hasattr(tx, 'tx_type') and tx.tx_type == 'income' and 
-                  hasattr(tx, 'description') and 
-                  "CREDIT CARD PAYMENT" in tx.description.upper()):
-                credit_card_payments += abs(tx.amount)
-                
-            # Handle borrowed debt
-            elif (hasattr(tx, 'device') and tx.device == "DEBT_BORROWED" and 
-                  tx.tx_type == "expense"):
-                borrowed_debt += abs(tx.amount)
-                
-            # Handle debt cleared
-            elif (hasattr(tx, 'category') and 
-                  tx.category.lower() == DEBT_CLEARED_CATEGORY.lower() and 
-                  tx.tx_type == "expense"):
-                borrowed_debt = max(0, borrowed_debt - abs(tx.amount))
-        
-        # Calculate final debt (credit card debt + borrowed debt)
-        credit_card_debt = max(0, credit_card_expenses - credit_card_payments)
+        # Calculate debts using the updated function
+        credit_card_debt, borrowed_debt = compute_outstanding_debt(transactions)
         total_debt = credit_card_debt + borrowed_debt
         
-        # Update the UI with the total debt
+        # Update UI with separate debt values
+        self.credit_card_debt_text = f"{credit_card_debt:,.2f}"
+        self.credit_card_debt_caption = "Credit Card Balance" if credit_card_debt > 0 else "No Credit Card Debt"
+        
+        self.borrowed_debt_text = f"{borrowed_debt:,.2f}"
+        self.borrowed_debt_caption = "Money Owed to People" if borrowed_debt > 0 else "No Money Owed"
+        
+        # Keep the total for backward compatibility
         self.outstanding_debt_text = f"{total_debt:,.2f}"
         self.outstanding_debt_caption = "Total Outstanding Debt"
         
@@ -1151,21 +1124,13 @@ class TransactionsScreen(Screen):
                     dashboard = self.manager.get_screen("dashboard")
                     if hasattr(dashboard, 'refresh_metrics'):
                         dashboard.refresh_metrics()
-                        
-                if "category_totals" in self.manager.screen_names:
-                    category_screen = self.manager.get_screen("category_totals")
-                    if hasattr(category_screen, 'refresh'):
-                        category_screen.refresh()
-                        
+                
                 if "networth" in self.manager.screen_names:
-                    networth_screen = self.manager.get_screen("networth")
-                    if hasattr(networth_screen, 'refresh'):
-                        networth_screen.refresh()
-                        
-        except ValueError as e:
-            # Show error message if amount is invalid
-            from kivymd.uix.snackbar import Snackbar
-            Snackbar(text=f"Error: {str(e)}").open()
+                    networth = self.manager.get_screen("networth")
+                    if hasattr(networth, 'refresh'):
+                        networth.refresh()
+        except Exception as e:
+            print(f"Error updating transaction: {e}")
 
 
 class NetWorthScreen(Screen):
@@ -1175,6 +1140,10 @@ class NetWorthScreen(Screen):
     outstanding_debt_caption = StringProperty("")
     total_savings_text = StringProperty("0.00")
     savings_summary = ListProperty([])
+    credit_card_debt_text = StringProperty("0.00")
+    credit_card_debt_caption = StringProperty("")
+    borrowed_debt_text = StringProperty("0.00")
+    borrowed_debt_caption = StringProperty("")
     savings_display = StringProperty("0.00")
     savings_fd_display = StringProperty("0.00")
     savings_rd_display = StringProperty("0.00")
@@ -1202,43 +1171,65 @@ class NetWorthScreen(Screen):
         Clock.schedule_once(lambda *_:self.refresh(),0)
 
     def refresh(self) -> None:
-        ensure_data_dir()
-        self.populate_settings()
-        rows = read_transactions()
-        transactions = [transaction_from_row(row) for row in rows]
-        settings = read_settings()
-        initial_raw = settings.get("initial_balance",0)
-        initial_cash_raw = settings.get("initial_cash_balance",0)
         try:
-            initial_balance = float(initial_raw)
-        except(TypeError,ValueError):
-            initial_balance = 0.0
+            transactions = []
+            for row in read_transactions():
+                try:
+                    transactions.append(transaction_from_row(row))
+                except Exception as e:
+                    print(f"Error loading transaction: {e}")
+                    continue
 
-        try:
-            initial_cash_balance = float(initial_cash_raw)
-        except(TypeError,ValueError):
-            initial_cash_balance = 0.0
+            settings = read_settings()
+            initial_balance = float(settings.get("initial_balance", 0))
+            initial_cash_balance = float(settings.get("initial_cash_balance", 0))
+            combined_initial_balance = initial_balance + initial_cash_balance
 
-        combined_initial_balance = initial_balance + initial_cash_balance
+            # Calculate balances and debts
+            balance_value = compute_balance(transactions, initial_balance=combined_initial_balance)
+            cash_balance = compute_cash_balance(transactions, initial_cash_balance=initial_cash_balance)
+            credit_card_debt, borrowed_debt = compute_outstanding_debt(transactions)
+            total_debt = credit_card_debt + borrowed_debt
+            
+            # Calculate savings
+            savings_total = compute_savings_totals(transactions)
+            total_savings = sum(savings_total.values())
+            
+            # Update UI
+            self.savings_display = f"{savings_total['Savings']:,.2f}"
+            self.savings_fd_display = f"{savings_total['Savings FD']:,.2f}"
+            self.savings_rd_display = f"{savings_total['Savings RD']:,.2f}"
+            self.savings_gold_display = f"{savings_total['Savings Gold']:,.2f}"
+            
+            self.liquid_balance_text = f"{balance_value:,.2f}"
+            self.liquid_balance_caption = f"Account: {balance_value - cash_balance:,.2f}\nCash: {cash_balance:,.2f}"
+            
+            # Update debt properties
+            self.outstanding_debt_text = f"{total_debt:,.2f}"
+            self.credit_card_debt_text = f"{credit_card_debt:,.2f}"
+            self.borrowed_debt_text = f"{borrowed_debt:,.2f}"
+            
+            if total_debt > 0:
+                self.outstanding_debt_caption = f"Credit Card: {credit_card_debt:,.2f}\nBorrowed: {borrowed_debt:,.2f}"
+                self.credit_card_debt_caption = "Credit Card Balance" if credit_card_debt > 0 else "No Credit Card Debt"
+                self.borrowed_debt_caption = "Money Owed to People" if borrowed_debt > 0 else "No Money Owed"
+            else:
+                self.outstanding_debt_caption = "No outstanding debt"
+                self.credit_card_debt_caption = "No Credit Card Debt"
+                self.borrowed_debt_caption = "No Money Owed"
 
-        balance_value = compute_balance(transactions, initial_balance=combined_initial_balance)
-        debt_value = compute_outstanding_debt(transactions)
-        savings_total = compute_savings_totals(transactions)
-        total_savings = sum(savings_total.values())
-        
-        self.savings_display = f"{savings_total["Savings"]:,.2f}"
-        self.savings_fd_display = f"{savings_total["Savings FD"]:,.2f}"
-        self.savings_rd_display = f"{savings_total["Savings RD"]:,.2f}"
-        self.savings_gold_display = f"{savings_total["Savings Gold"]:,.2f}"
-        self.liquid_balance_text = f"{balance_value:,.2f}"
-        self.liquid_balance_caption = f"{combined_initial_balance:,.2f}"
-        self.outstanding_debt_text = f"{debt_value:,.2f}"
-        if debt_value > 0 :
-            self.outstanding_debt_caption = "Credit card outstanding Debt"
-        else:
-            self.outstanding_debt_caption = "No outstanding debt"
-
-        self.total_savings_text = f"{total_savings:,.2f}"
+            self.total_savings_text = f"{total_savings:,.2f}"
+            
+            # Update the savings summary list
+            self.savings_summary = [
+                {"category": key, "amount": f"{value:,.2f}"}
+                for key, value in savings_total.items()
+            ]
+            
+        except Exception as e:
+            print(f"Error in refresh: {e}")
+            import traceback
+            traceback.print_exc()
 
 class CategoryTotalsScreen(Screen):
     category_summary = ListProperty([])

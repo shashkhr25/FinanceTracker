@@ -8,8 +8,8 @@ from __future__ import annotations
 import json
 import uuid
 from dataclasses import dataclass
-from datetime import date, datetime
-from typing import Dict, Iterable, List, Mapping, MutableMapping, Sequence, Tuple, Any, Optional
+from datetime import date, datetime, timedelta
+from typing import Dict, Iterable, List, Mapping, MutableMapping, Sequence, Tuple, Any, Optional, Union
 
 from storage import read_settings
 
@@ -252,83 +252,194 @@ def compute_cash_balance(transactions: Sequence[Transaction], initial_cash_balan
                 balance -= tx.amount
     return round(balance, 2)
 
-def compute_outstanding_debt(transactions: Sequence[Transaction]) -> float:
-    """Calculate outstanding debt, including credit card expenses and borrowed debt.
+def debug_transaction(tx) -> str:
+    """Return a string with all transaction attributes for debugging."""
+    attrs = {}
+    for attr in dir(tx):
+        if not attr.startswith('__') and not callable(getattr(tx, attr)):
+            attrs[attr] = getattr(tx, attr, 'N/A')
+    return json.dumps(attrs, indent=2, default=str)
+
+def get_billing_cycle(tx_date: date) -> tuple[date, date]:
+    """Return the start and end dates of the billing cycle for a given date.
+    
+    Billing cycle runs from the 19th of the current month to the 20th of the next month.
+    """
+    if tx_date.day >= 19:
+        # Current month's 19th to next month's 20th
+        cycle_start = tx_date.replace(day=19)
+        # Calculate next month's 20th
+        if tx_date.month == 12:
+            next_month = tx_date.replace(year=tx_date.year + 1, month=1, day=20)
+        else:
+            next_month = tx_date.replace(month=tx_date.month + 1, day=20)
+        cycle_end = next_month
+    else:
+        # Previous month's 19th to current month's 20th
+        if tx_date.month == 1:
+            prev_month = tx_date.replace(year=tx_date.year - 1, month=12, day=19)
+        else:
+            prev_month = tx_date.replace(month=tx_date.month - 1, day=19)
+        cycle_start = prev_month
+        cycle_end = tx_date.replace(day=20)
+    
+    return cycle_start, cycle_end
+
+def compute_outstanding_debt(transactions: Sequence[Transaction]) -> tuple[float, float]:
+    """Calculate outstanding debt, separating credit card debt and borrowed debt.
+    
+    Credit card debt is calculated per billing cycle (19th to 18th of next month).
     
     Args:
         transactions: List of transactions to process
         
     Returns:
-        Float representing total outstanding debt
+        Tuple of (credit_card_debt, borrowed_debt) as floats
     """
-    debt = 0.0
-    print(f"\n=== Starting debt calculation with {len(transactions)} transactions ===")
+    print("\n=== Starting Debt Calculation ===")
+    print(f"Processing {len(transactions)} transactions")
+    print("=== CREDIT_CARD_DEVICES =", CREDIT_CARD_DEVICES)
+    print("=== CREDIT_CARD_PAYMENT_SUB_TYPE =", CREDIT_CARD_PAYMENT_SUB_TYPE)
     
-    for tx in sorted(transactions, key=lambda x: x.timestamp):
-        # Skip non-credit card transactions that don't affect balance, but always process reset transactions
-        is_credit_card_tx = (hasattr(tx, 'device') and 
-                           tx.device in {"CREDIT_CARD", "CREDIT_CARD_UPI"} and 
-                           tx.tx_type == "expense")
-        is_reset_tx = hasattr(tx, 'description') and "CREDIT CARD DEBT RESET" in tx.description
-                            
-        if not tx.effects_balance and not is_credit_card_tx and not is_reset_tx:
-            print(f"Skipping non-balance-affecting transaction: {tx.description} (ID: {getattr(tx, 'id', 'N/A')})")
+    # Track expenses and payments by billing cycle
+    cycle_totals = {}
+    borrowed_debt = 0.0
+    
+    # Get current billing cycle
+    today = date.today()
+    current_cycle_start, current_cycle_end = get_billing_cycle(today)
+    print(f"Current billing cycle: {current_cycle_start} to {current_cycle_end}")
+
+    # First pass: Process all transactions
+    for tx in transactions:
+        # Skip if not an expense or doesn't have required attributes
+        if not hasattr(tx, 'tx_type') or tx.tx_type != "expense":
+            continue
+
+        # Get transaction details with safe defaults
+        device = getattr(tx, 'device', '').upper()
+        description = getattr(tx, 'description', '').lower()
+        category = getattr(tx, 'category', '').lower()
+        amount = abs(getattr(tx, 'amount', 0))
+        tx_date = getattr(tx, 'date', today)
+        
+        # Get billing cycle for this transaction
+        cycle_start, cycle_end = get_billing_cycle(tx_date)
+        cycle_key = (cycle_start, cycle_end)
+        
+        # Initialize cycle totals if not exists
+        if cycle_key not in cycle_totals:
+            cycle_totals[cycle_key] = {
+                'expenses': 0.0,
+                'payments': 0.0,
+                'is_current': (cycle_start == current_cycle_start and cycle_end == current_cycle_end)
+            }
+        
+        # Handle DEBT_BORROWED transactions
+        if device == "DEBT_BORROWED":
+            if not any(term in description for term in ["payment", "cleared"]):
+                borrowed_debt += amount
+                print(f"DEBT_BORROWED: Added {amount} to borrowed debt")
             continue
             
-        # Check for reset marker
-        if hasattr(tx, 'description') and getattr(tx, 'description', '') == "CREDIT CARD DEBT RESET":
-            print(f"Resetting debt to 0 (was {debt})")
-            debt = 0.0
+        # Handle DEBT_CLEARED transactions
+        if DEBT_CLEARED_CATEGORY.lower() in category:
+            payment = min(borrowed_debt, amount)
+            borrowed_debt = max(0, borrowed_debt - payment)
+            print(f"DEBT_CLEARED: Reduced borrowed debt by {payment}")
             continue
-            
-        # Debug info
-        tx_info = (
-            f"\nProcessing transaction: {getattr(tx, 'id', 'N/A')} - {getattr(tx, 'description', 'N/A')}\n"
-            f"  Type: {getattr(tx, 'tx_type', 'N/A')}, "
-            f"Amount: {getattr(tx, 'amount', 0)}, "
-            f"Device: {getattr(tx, 'device', 'N/A')}, "
-            f"SubType: {getattr(tx, 'sub_type', 'N/A')}, "
-            f"Category: {getattr(tx, 'category', 'N/A')}"
+        
+        # Check if this is a credit card transaction
+        is_credit_card = (
+            device in CREDIT_CARD_DEVICES or
+            any(term in description for term in ['credit card', 'creditcard', 'cc ']) or
+            ('credit' in category and 'card' in category)
         )
         
-        # Handle credit card debt (from statements)
-        if hasattr(tx, 'sub_type') and tx.sub_type == DEFAULT_CREDIT_CARD_DEBT_SUB_TYPE:
-            if tx.tx_type == "income":
-                old_debt = debt
-                debt += tx.amount
-                print(f"{tx_info}\n  Adding credit card debt: +{tx.amount} (debt: {old_debt} -> {debt})")
-                
-        # Handle credit card payments (reduce debt)
-        elif hasattr(tx, 'sub_type') and tx.sub_type == CREDIT_CARD_PAYMENT_SUB_TYPE and tx.tx_type == "expense":
-            old_debt = debt
-            payment = min(debt, tx.amount)
-            debt = max(0, debt - tx.amount)
-            print(f"{tx_info}\n  Processing credit card payment: -{payment} (debt: {old_debt} -> {debt})")
-            
-        # Handle credit card and UPI credit card expenses (add to debt)
-        elif (hasattr(tx, 'device') and 
-              tx.device in {"CREDIT_CARD", "CREDIT_CARD_UPI"} and 
-              tx.tx_type == "expense"):
-            old_debt = debt
-            debt += tx.amount
-            print(f"{tx_info}\n  Adding credit card expense: +{tx.amount} (debt: {old_debt} -> {debt})")
-            
-        # Handle debt borrowed (add to debt, same as credit card but from people)
-        elif hasattr(tx, 'device') and tx.device == "DEBT_BORROWED" and tx.tx_type == "expense":
-            old_debt = debt
-            debt += tx.amount
-            print(f"{tx_info}\n  Adding borrowed debt: +{tx.amount} (debt: {old_debt} -> {debt})")
-            
-        # Handle debt cleared (reduce debt)
-        elif hasattr(tx, 'category') and tx.category.lower() == DEBT_CLEARED_CATEGORY.lower() and tx.tx_type == "expense":
-            old_debt = debt
-            payment = min(debt, tx.amount)
-            debt = max(0, debt - tx.amount)
-            print(f"{tx_info}\n  Processing debt clearance: -{payment} (debt: {old_debt} -> {debt})")
+        if not is_credit_card:
+            # Check for borrowed debt in non-credit card transactions
+            if any(term in category for term in ['borrowed', 'loan']):
+                borrowed_debt += amount
+                print(f"BORROWED: Added {amount} to borrowed debt")
+            continue
+
+        # For credit card transactions, check if it's a payment
+        is_payment = any(term in description for term in ['payment', 'bill', 'paid', 'clear', 'settle', 'repay'])
+        
+        # Process payment or expense
+        if is_payment:
+            cycle_totals[cycle_key]['payments'] += amount
+            print(f"CREDIT CARD PAYMENT: Added {amount} to payments for cycle {cycle_start} to {cycle_end}")
         else:
-            print(f"{tx_info}\n  Not a debt-related transaction")
-            
-    return round(debt, 2)
+            cycle_totals[cycle_key]['expenses'] += amount
+            print(f"CREDIT CARD EXPENSE: Added {amount} to expenses for cycle {cycle_start} to {cycle_end}")
+    
+    # Calculate total credit card debt
+    credit_card_debt = 0.0
+    current_cycle_debt = 0.0
+    total_expenses = 0.0
+    total_payments = 0.0
+    
+    # First, calculate total expenses and payments across all cycles
+    all_expenses = sum(totals['expenses'] for totals in cycle_totals.values())
+    all_payments = sum(totals['payments'] for totals in cycle_totals.values())
+    
+    # Process cycles in chronological order to show breakdown
+    for (cycle_start, cycle_end), totals in sorted(cycle_totals.items()):
+        cycle_balance = totals['expenses'] - totals['payments']
+        is_current = (cycle_start, cycle_end) == (current_cycle_start, current_cycle_end)
+        
+        if is_current:
+            # For current cycle, include all expenses in debt calculation
+            current_cycle_debt = totals['expenses']  # Include all expenses, regardless of payments
+            print(f"\nCurrent Cycle ({cycle_start} to {cycle_end}):")
+            print(f"  Expenses: {totals['expenses']:.2f} (all included in debt)")
+            print(f"  Payments: {totals['payments']:.2f} (applied to oldest debt first)")
+        else:
+            # For past cycles, show the balance but don't include in debt if payments exceed expenses
+            print(f"\nPast Cycle ({cycle_start} to {cycle_end}):")
+            print(f"  Expenses: {totals['expenses']:.2f}")
+            print(f"  Payments: {totals['payments']:.2f}")
+            print(f"  Balance: {cycle_balance:.2f}")
+        
+        total_expenses += totals['expenses']
+        total_payments += totals['payments']
+    
+    # Total debt is all expenses minus payments, but not less than 0
+    credit_card_debt = max(0, all_expenses - all_payments)
+    
+    # If there are payments, show how they were applied
+    if all_payments > 0:
+        print("\nPayment Application:")
+        print(f"  - Total Expenses: {all_expenses:.2f}")
+        print(f"  - Total Payments: {all_payments:.2f}")
+        print(f"  - Remaining Debt: {credit_card_debt:.2f}")
+    
+    # Calculate current cycle's unpaid expenses (for reference)
+    current_cycle_totals = next((t for (s, e), t in cycle_totals.items() 
+                              if (s, e) == (current_cycle_start, current_cycle_end)), 
+                             {'expenses': 0, 'payments': 0})
+    current_cycle_expenses = current_cycle_totals['expenses']
+    
+    print(f"\n=== Debt Calculation Summary ===")
+    print(f"Total Credit Card Expenses: {total_expenses:.2f}")
+    print(f"Total Credit Card Payments: {total_payments:.2f}")
+    print(f"\nCurrent Billing Cycle ({current_cycle_start} to {current_cycle_end}):")
+    print(f"  Current Cycle Expenses: {current_cycle_totals['expenses']:.2f}")
+    print(f"  Current Cycle Payments: {current_cycle_totals['payments']:.2f}")
+    print(f"  Unpaid Expenses: {max(0, current_cycle_totals['expenses'] - current_cycle_totals['payments']):.2f}")
+    print(f"\nTotal Credit Card Debt: {credit_card_debt:.2f}")
+    print(f"Borrowed Debt: {borrowed_debt:.2f}")
+    print(f"Total Debt: {credit_card_debt + borrowed_debt:.2f}")
+    
+    # Show how payments are being applied
+    if all_payments > 0:
+        print("\nNote: Payments are applied to the oldest expenses first.")
+        print(f"  - {min(all_payments, all_expenses):.2f} applied to oldest expenses")
+        print(f"  - {max(0, all_payments - all_expenses):.2f} remaining payments (if any)")
+    print("=" * 25 + "\n")
+    
+    return (round(credit_card_debt, 2), round(borrowed_debt, 2))
 
 def compute_savings_totals(transactions: Sequence[Transaction]) -> Dict[str, float]:
     """Aggregate savings-related flows, including withdrawals."""
