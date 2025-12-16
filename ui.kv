@@ -1026,8 +1026,15 @@
 				RecycleView:
 					viewclass: "CategorySummaryRow"
 					data: root.category_summary
-					bar_width: dp(6)
-					scroll_wheel_distance : dp(120)
+					scroll_wheel_distance: dp(80)
+					scroll_type: ['bars', 'content']
+					scroll_timeout: 250
+					bar_width: dp(8)
+					bar_color: rgba("#4B5563FF")
+					bar_inactive_color: rgba("#4B556388")
+					bar_margin: dp(2)
+					do_scroll_x: False
+					do_scroll_y: True
 					RecycleBoxLayout:
 						default_size: None, dp(50)
 						default_size_hint: 1, None
@@ -1035,6 +1042,7 @@
 						height: self.minimum_height
 						orientation: "vertical"
 						spacing: dp(10)
+						padding: [0, 0, dp(16), 0]  # Add right padding for scrollbar
 
 
 <TransactionsScreen>:
@@ -1140,9 +1148,16 @@
 			RecycleView:
 				id: transactions_rv
 				viewclass: "TransactionRow"
-				bar_width: dp(6)
-				scroll_wheel_distance: dp(20)
+				bar_width: dp(8)
+				bar_color: rgba("#4B5563FF")
+				bar_inactive_color: rgba("#4B556388")
+				bar_margin: dp(2)
+				scroll_type: ['bars', 'content']
+				scroll_wheel_distance: dp(80)
+				scroll_timeout: 250
 				effect_cls: "ScrollEffect"
+				do_scroll_x: False
+				do_scroll_y: True
 				RecycleBoxLayout:
 					default_size: None, dp(72)
 					default_size_hint: 1, None
@@ -1150,6 +1165,7 @@
 					height: self.minimum_height
 					orientation: "vertical"
 					spacing: dp(12)
+					padding: [0, 0, dp(8), 0]  # Add right padding for scrollbar
 
 <NetWorthScreen>:
 	name: "networth"
