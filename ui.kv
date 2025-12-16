@@ -1369,240 +1369,436 @@
 		
 
 <SharedExpensesScreen>:
-	name: "shared_expenses"
-	summary_data: []
-	detail_data: []
-	participant_input: participant_input
-	category_input: category_input
-	BoxLayout:
-		orientation: "vertical"
-		canvas.before:
-			Color:
-				rgba: rgba("#0B1020FF")
-			Rectangle:
-				pos: self.pos
-				size: self.size
-		TopAppBar:
-		Button:
-			size_hint: None,None
-			size: dp(44), dp(44)
-			text: "<-"
-			font_name: "DejaVuSans.ttf"
-			font_size: sp(20)
-			background_normal: ""
-			background_color: 0,0,0,0
-			color: rgba("#E2E8F0FF")
-			on_release: app.root.current = "dashboard"
-		ScrollView:
-			do_scroll_x: False
-			GridLayout:
-				cols: 1
-				padding: dp(20)
-				spacing: dp(16)
-				size_hint_y: None
-				height: self.minimum_height
-				Label:
-					text: "Shared Expenses"
-					color: rgba("#FFFFFF")
-					font_size: sp(20)
-					bold: True
-				Label:
-					text: root.filters_caption
-					color: rgba("#94A3B8FF")
-					font_size: sp(12)
-					size_hint_y: None
-					height: dp(18)
-				BoxLayout:
-					orientation: "horizontal"
-					spacing: dp(12)
-					size_hint_y: None
-					height: dp(48)
-					TextInput:
-						id: participant_input
-						hint_text: "Participant name"
-						background_color: rgba("#1E293BFF")
-						foreground_color: rgba("#E2E8F0FF")
-						padding: [dp(12), dp(10)]
-						size_hint_y: None
-						height: dp(44)
-						radius: [12,12,12,12]
-						multiline: False
-						on_text_validate: root.handle_filter_change()
-					TextInput:
-						id: category_input
-						hint_text: "Category"
-						background_color: rgba("#1E293BFF")
-						foreground_color: rgba("#E2E8F0FF")
-						padding: [dp(12), dp(10)]
-						size_hint_y: None
-						height: dp(44)
-						radius: [12,12,12,12]
-						multiline: False
-						on_text_validate: root.handle_filter_change()
-					Button:
-						text: "Apply"
-						size_hint_x: None
-						width: dp(90)
-						on_release: root.handle_filter_change()
-						background_color: rgba("#22C55EFF")
-						color: rgba("#0F172AFF")
-					Button:
-						text: "Clear"
-						size_hint_x: None
-						width: dp(90)
-						on_release: root.clear_filters()
-						background_color: rgba("#475569FF")
-						color: rgba("#FFFFFF")
-				GridLayout:
-					cols: 2
-					spacing: dp(12)
-					size_hint_y: None
-					height: dp(150)
-					row_default_height: dp(140)
-					row_force_default: True
-					MetricCard:
-						metric_title: "Total shared"
-						metric_value: root.total_shared_text
-						metric_caption: root.filters_caption
-						bg_color: rgba("#1F2937FF")
-					MetricCard:
-						metric_title: root.summary_caption
-						metric_value: root.detail_caption
-						metric_caption: "Updated from your splits"
-						bg_color: rgba("#111827FF")
-				GlassCard:
-					size_hint_y: None
-					height: max(self.minimum_height, dp(200))
-					BoxLayout:
-						size_hint_y: None
-						height: dp(28)
-						Label:
-							text: "Per-person summary"
-							color: rgba("#E2E8F0FF")
-							font_size: sp(14)
-							bold: True
-						Label:
-							text: root.summary_caption
-							color: rgba("#94A3B8FF")
-							font_size: sp(12)
-							halign: "right"
-							text_size: self.size
-					RecycleView:
-						viewclass: "SharedSummaryRow"
-						data: root.summary_data
-						bar_width: dp(4)
-						scroll_wheel_distance: dp(80)
-						RecycleBoxLayout:
-							default_size: None, dp(36)
-							default_size_hint: 1, None
-							size_hint_y: None
-							height: self.minimum_height
-							orientation: "vertical"
-				GlassCard:
-					size_hint_y: None
-					height: max(self.minimum_height, dp(420))
-					BoxLayout:
-						size_hint_y: None
-						height: dp(28)
-						Label:
-							text: "Transaction details"
-							color: rgba("#E2E8F0FF")
-							font_size: sp(14)
-							bold: True
-						Label:
-							text: root.detail_caption
-							color: rgba("#94A3B8FF")
-							font_size: sp(12)
-							halign: "right"
-							text_size: self.size
-					RecycleView:
-						viewclass: "SharedDetailRow"
-						data: root.detail_data
-						bar_width: dp(4)
-						scroll_wheel_distance: dp(80)
-						RecycleBoxLayout:
-							default_size: None, dp(88)
-							default_size_hint: 1, None
-							size_hint_y: None
-							height: self.minimum_height
-							orientation: "vertical"
+    name: "shared_expenses"
+    summary_data: []
+    detail_data: []
+    participant_input: participant_input
+    category_input: category_input
+    
+    BoxLayout:
+        orientation: "vertical"
+        canvas.before:
+            Color:
+                rgba: rgba("#0F172AFF")
+            Rectangle:
+                pos: self.pos
+                size: self.size
+        
+        # Header with back button and title
+        BoxLayout:
+            size_hint_y: None
+            height: dp(56)
+            padding: [dp(16), 0]
+            spacing: dp(16)
+            
+			Button:
+				size_hint:	None, None
+				size: dp(44), dp(44)
+				text: "<-"
+				font_name: "DejaVuSans.ttf"
+				font_size: sp(20)
+				background_normal: ""
+				background_color: 0,0,0,0
+				color: rgba("#E2E8F0FF")
+				on_release: app.root.current = "dashboard"
+                canvas.before:
+                    Color:
+                        rgba: self.background_color
+                    RoundedRectangle:
+                        pos: self.pos
+                        size: self.size
+                        radius: [dp(8), dp(8), dp(8), dp(8)]
+            
+            Label:
+                text: "Shared Expenses"
+                color: rgba("#F8FAFCFF")
+                font_size: sp(18)
+                bold: True
+                halign: "left"
+                valign: "middle"
+                text_size: self.size
+        
+        # Main content area
+        ScrollView:
+            do_scroll_x: False
+            bar_width: dp(4)
+            bar_color: rgba("#3B82F6FF")
+            
+            BoxLayout:
+                orientation: "vertical"
+                padding: [dp(16), dp(16), dp(16), dp(24)]
+                spacing: dp(16)
+                size_hint_y: None
+                height: self.minimum_height
+                
+                # Summary cards
+                GridLayout:
+                    cols: 2
+                    spacing: dp(12)
+                    size_hint_y: None
+                    height: dp(100)
+                    
+                    BoxLayout:
+                        orientation: "vertical"
+                        padding: [dp(16), dp(12)]
+                        canvas.before:
+                            Color:
+                                rgba: rgba("#1E293BFF")
+                            RoundedRectangle:
+                                pos: self.pos
+                                size: self.size
+                                radius: [dp(12), dp(12), dp(12), dp(12)]
+                        
+                        Label:
+                            text: "Total Shared"
+                            color: rgba("#94A3B8FF")
+                            font_size: sp(13)
+                            size_hint_y: None
+                            height: dp(20)
+                            halign: "left"
+                            text_size: self.size
+                        
+                        Label:
+                            text: root.total_shared_text
+                            color: rgba("#F8FAFCFF")
+                            font_size: sp(20)
+                            bold: True
+                            size_hint_y: None
+                            height: dp(28)
+                            halign: "left"
+                            text_size: self.size
+                    
+                    BoxLayout:
+                        orientation: "vertical"
+                        padding: [dp(16), dp(12)]
+                        canvas.before:
+                            Color:
+                                rgba: rgba("#1E293BFF")
+                            RoundedRectangle:
+                                pos: self.pos
+                                size: self.size
+                                radius: [dp(12), dp(12), dp(12), dp(12)]
+                        
+                        Label:
+                            text: root.summary_caption
+                            color: rgba("#94A3B8FF")
+                            font_size: sp(13)
+                            size_hint_y: None
+                            height: dp(20)
+                            halign: "left"
+                            text_size: self.size
+                        
+                        Label:
+                            text: root.detail_caption
+                            color: rgba("#F8FAFCFF")
+                            font_size: sp(20)
+                            bold: True
+                            size_hint_y: None
+                            height: dp(28)
+                            halign: "left"
+                            text_size: self.size
+                
+                # Filter section
+                BoxLayout:
+                    orientation: "vertical"
+                    spacing: dp(8)
+                    size_hint_y: None
+                    height: dp(120)
+                    
+                    Label:
+                        text: "Filter Transactions"
+                        color: rgba("#F8FAFCFF")
+                        font_size: sp(14)
+                        bold: True
+                        size_hint_y: None
+                        height: dp(20)
+                        halign: "left"
+                        text_size: self.size
+                    
+                    BoxLayout:
+                        orientation: "horizontal"
+                        spacing: dp(12)
+                        size_hint_y: None
+                        height: dp(48)
+                        
+                        TextInput:
+                            id: participant_input
+                            hint_text: "Person"
+                            hint_text_color: rgba("#64748BFF")
+                            background_color: rgba("#1E293BFF")
+                            foreground_color: rgba("#F8FAFCFF")
+                            padding: [dp(12), dp(10)]
+                            size_hint_x: 0.5
+                            multiline: False
+                            on_text_validate: root.handle_filter_change()
+                            font_size: sp(14)
+                            canvas.before:
+                                Color:
+                                    rgba: rgba("#1E293BFF")
+                                RoundedRectangle:
+                                    pos: self.pos
+                                    size: self.size
+                                    radius: [dp(8), dp(8), dp(8), dp(8)]
+                                        
+                                Color:
+                                    rgba: rgba("#334155FF")
+                                Line:
+                                    rounded_rectangle: [self.x, self.y, self.width, self.height, 8]
+                        
+                        TextInput:
+                            id: category_input
+                            hint_text: "Category"
+                            hint_text_color: rgba("#64748BFF")
+                            background_color: rgba("#1E293BFF")
+                            foreground_color: rgba("#F8FAFCFF")
+                            padding: [dp(12), dp(10)]
+                            size_hint_x: 0.5
+                            multiline: False
+                            on_text_validate: root.handle_filter_change()
+                            font_size: sp(14)
+                            canvas.before:
+                                Color:
+                                    rgba: rgba("#1E293BFF")
+                                RoundedRectangle:
+                                    pos: self.pos
+                                    size: self.size
+                                    radius: [dp(8), dp(8), dp(8), dp(8)]
+                                        
+                                Color:
+                                    rgba: rgba("#334155FF")
+                                Line:
+                                    rounded_rectangle: [self.x, self.y, self.width, self.height, 8]
+                    
+                    BoxLayout:
+                        orientation: "horizontal"
+                        spacing: dp(12)
+                        size_hint_y: None
+                        height: dp(40)
+                        
+                        Button:
+                            text: "Clear"
+                            size_hint_x: 0.5
+                            background_color: rgba("#1E293BFF")
+                            color: rgba("#94A3B8FF")
+                            font_size: sp(14)
+                            on_release: root.clear_filters()
+                            canvas.before:
+                                Color:
+                                    rgba: self.background_color
+                                RoundedRectangle:
+                                    pos: self.pos
+                                    size: self.size
+                                    radius: [dp(8), dp(8), dp(8), dp(8)]
+                        
+                        Button:
+                            text: "Apply Filters"
+                            size_hint_x: 0.5
+                            background_color: rgba("#3B82F6FF")
+                            color: rgba("#FFFFFF")
+                            font_size: sp(14)
+                            on_release: root.handle_filter_change()
+                            canvas.before:
+                                Color:
+                                    rgba: self.background_color
+                                RoundedRectangle:
+                                    pos: self.pos
+                                    size: self.size
+                                    radius: [dp(8), dp(8), dp(8), dp(8)]
+                
+                # Summary section
+                BoxLayout:
+                    orientation: "vertical"
+                    spacing: dp(8)
+                    size_hint_y: None
+                    height: max(dp(200), self.minimum_height)
+                    
+                    Label:
+                        text: "Per-person Summary"
+                        color: rgba("#F8FAFCFF")
+                        font_size: sp(14)
+                        bold: True
+                        size_hint_y: None
+                        height: dp(20)
+                        halign: "left"
+                        text_size: self.size
+                    
+                    BoxLayout:
+                        orientation: "vertical"
+                        canvas.before:
+                            Color:
+                                rgba: rgba("#1E293BFF")
+                            RoundedRectangle:
+                                pos: self.pos
+                                size: self.size
+                                radius: [dp(12), dp(12), dp(12), dp(12)]
+                        
+                        RecycleView:
+                            viewclass: "SharedSummaryRow"
+                            data: root.summary_data
+                            bar_width: dp(4)
+                            bar_color: rgba("#3B82F6FF")
+                            scroll_wheel_distance: dp(80)
+                            
+                            RecycleBoxLayout:
+                                default_size: None, dp(52)
+                                default_size_hint: 1, None
+                                size_hint_y: None
+                                height: self.minimum_height
+                                orientation: "vertical"
+                                spacing: 0
+                
+                # Transaction details section
+                BoxLayout:
+                    orientation: "vertical"
+                    spacing: dp(8)
+                    size_hint_y: None
+                    height: max(dp(300), self.minimum_height)
+                    
+                    Label:
+                        text: "Transaction Details"
+                        color: rgba("#F8FAFCFF")
+                        font_size: sp(14)
+                        bold: True
+                        size_hint_y: None
+                        height: dp(20)
+                        halign: "left"
+                        text_size: self.size
+                    
+                    BoxLayout:
+                        orientation: "vertical"
+                        canvas.before:
+                            Color:
+                                rgba: rgba("#1E293BFF")
+                            RoundedRectangle:
+                                pos: self.pos
+                                size: self.size
+                                radius: [dp(12), dp(12), dp(12), dp(12)]
+                        
+                        RecycleView:
+                            viewclass: "SharedDetailRow"
+                            data: root.detail_data
+                            bar_width: dp(4)
+                            bar_color: rgba("#3B82F6FF")
+                            scroll_wheel_distance: dp(80)
+                            
+                            RecycleBoxLayout:
+                                default_size: None, dp(88)
+                                default_size_hint: 1, None
+                                size_hint_y: None
+                                height: self.minimum_height
+                                orientation: "vertical"
+                                spacing: 0
 
 <SharedDetailRow@BoxLayout>:
-	date_text: ""
-	category_text: ""
-	description_text: ""
-	amount_text: ""
-	participants_text: ""
-	notes_text: ""
-	share_text: ""
-	orientation: "vertical"
-	size_hint_y: None
-	height: max(self.minimum_height, dp(110))
-	padding: dp(16)
-	spacing: dp(6)
-	canvas.before:
-		Color:
-			rgba: (26/255, 32/255, 45/255, 0.7)
-		RoundedRectangle:
-			pos: self.pos
-			size: self.size
-			radius: [12,12,12,12]
-	BoxLayout:
-		size_hint_y: None
-		height: dp(26)
-		orientation: "horizontal"
-		Label:
-			text: root.category_text if root.category_text else root.date_text
-			color: rgba("#A5B4FCFF")
-			font_size: sp(12)
-			valign: "middle"
-			text_size: self.size
-			size_hint_x: 0.55
-		Label:
-			text: f"{root.date_text}   {root.amount_text}"
-			color: rgba("#FBBF24FF")
-			font_size: sp(13)
-			bold: True
-			halign: "right"
-			valign: "middle"
-			text_size: self.size
-			size_hint_x: 0.45
-	Label:
-		text: root.description_text
-		color: rgba("#FFFFFF")
-		font_size: sp(13)
-		bold: True
-	Label:
-		text: root.participants_text
-		color: rgba("#FACC15FF")
-		font_size: sp(12)
-		text_size: self.width, None
-		size_hint_y: None
-		height: self.texture_size[1] if self.texture_size[1] > 0 else dp(16)
-	Button:
-		size_hint: None, None
-		size: dp(24), dp(24)
-		background_normal: ""
-		background_color: 0, 0, 0, 0
-		color: rgba("#FCA5A5FF")
-		text: "✕"
-		font_size: sp(16)
-		bold: True
-		pos_hint: {'right': 1, 'top': 1}
-		on_release: app.root.get_screen("transactions").delete_transaction(root.transaction_id)
-	Label:
-		text: root.share_text
-		color: rgba("#86EFACFF")
-		font_size: sp(12)
-		text_size: self.width, None
-		size_hint_y: None
-		height: dp(16) if root.share_text else 0
-	Label:
-		text: root.notes_text or ""
-		color: rgba("#94A3B8FF")
-		font_size: sp(11)
-		text_size: self.size
-		valign: "top"
+    date_text: ""
+    category_text: ""
+    description_text: ""
+    amount_text: ""
+    participants_text: ""
+    notes_text: ""
+    share_text: ""
+    orientation: "horizontal"
+    size_hint_y: None
+    height: dp(72)
+    padding: [dp(16), dp(16), dp(8), dp(16)]
+    spacing: dp(12)
+    canvas.before:
+        Color:
+            rgba: rgba("#1A202DFF")
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(16), dp(16), dp(16), dp(16)]
+    
+    # Date
+    Label:
+        text: root.date_text
+        size_hint_x: None
+        width: dp(90)
+        color: rgba("#94A3B8FF")
+        font_size: sp(14)
+    
+    # Main content
+    BoxLayout:
+        orientation: "vertical"
+        spacing: dp(4)
+        
+        # Top row - Category and amount
+        BoxLayout:
+            orientation: "horizontal"
+            size_hint_y: None
+            height: dp(24)
+            
+            # Category
+            Label:
+                text: root.category_text or "Uncategorized"
+                color: rgba("#E2E8F0FF")
+                font_size: sp(16)
+                bold: True
+                text_size: self.width, None
+                halign: "left"
+                valign: "middle"
+                shorten: True
+                shorten_from: "right"
+            
+            # Amount
+            Label:
+                text: root.amount_text
+                color: rgba("#86EFACFF")
+                font_size: sp(16)
+                bold: True
+                text_size: self.size
+                halign: "right"
+                valign: "middle"
+        
+        # Middle row - Description
+        Label:
+            text: root.description_text
+            color: rgba("#94A3B8FF")
+            font_size: sp(14)
+            text_size: self.width, None
+            halign: "left"
+            valign: "top"
+            size_hint_y: None
+            height: self.texture_size[1]
+            
+        # Bottom row - Participants and share (only if exists)
+        BoxLayout:
+            orientation: "horizontal"
+            size_hint_y: None
+            height: dp(20) if (root.participants_text or root.share_text) else 0
+            
+            # Participants
+            Label:
+                text: root.participants_text
+                color: rgba("#94A3B8FF")
+                font_size: sp(12)
+                text_size: self.width, None
+                halign: "left"
+                valign: "center"
+                shorten: True
+                shorten_from: "right"
+            
+            # Share amount
+            Label:
+                text: root.share_text
+                color: rgba("#86EFACFF")
+                font_size: sp(12)
+                text_size: self.size
+                halign: "right"
+                valign: "center"
+    
+    # Notes (only show if exists)
+    Label:
+        text: root.notes_text
+        color: rgba("#94A3B8FF")
+        font_size: sp(12)
+        text_size: self.width, None
+        halign: "left"
+        valign: "top"
+        size_hint: None, None
+        size: dp(200), self.texture_size[1] if root.notes_text else 0
+        opacity: 1 if root.notes_text else 0
 
 MoneyTrackerScreenManager:
 	DashboardScreen:
