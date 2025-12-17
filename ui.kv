@@ -209,14 +209,14 @@
 	spacing: dp(18)
 	canvas.before:
 		Color:
-			rgba: rgba("#0F172AFF")
+			rgba: rgba("#bbbfc2ff")
 		Rectangle:
 			pos: self.pos
 			size: self.size
 	Label:
 		text: "MoneyTracker"
 		font_size: sp(20)
-		color: rgba("#E8EAEDFF")
+		color: rgba("#000306ff")
 		bold: True
 		size_hint_y: None
 		height: self.texture_size[1]
@@ -227,37 +227,37 @@
 		text: "Dashboard"
 		background_normal: ""
 		background_color: 0,0,0,0
-		color: rgba("#FFFFFF")
+		color: rgba("#000306ff")
 		on_release: app.root.current = "dashboard"
 	Button:
 		text: "Transactions"
 		background_normal: ""
 		background_color: 0,0,0,0
-		color: rgba("#FFFFFF")
+		color: rgba("#000306ff")
 		on_release: app.root.current = "transactions"
 	Button:
 		text: "Category Totals"
 		background_normal: ""
 		background_color: 0,0,0,0
-		color: rgba("#FFFFFF")
+		color: rgba("#000306ff")
 		on_release: app.root.current = "category_totals"
 	Button:
 		text: "Shared Expenses"
 		background_normal: ""
 		background_color: 0,0,0,0
-		color: rgba("#FFFFFF")
+		color: rgba("#000306ff")
 		on_release: app.root.current = "shared"
 	Button:
 		text: "Networth"
 		background_normal: ""
 		background_color: 0,0,0,0
-		color: rgba("#FFFFFF")
+		color: rgba("#000306ff")
 		on_release: app.root.current = "networth"
 	Button:
 		text: "Settings"
 		background_normal: ""
 		background_color: 0,0,0,0
-		color: rgba("#FFFFFF")
+		color: rgba("#000306ff")
 		on_release: app.root.current = "settings"	
 	Widget:
 		size_hint_y:1
@@ -1409,7 +1409,7 @@
                         metric_title: "Money Owed"
                         metric_value: root.borrowed_debt_text
                         metric_caption: root.borrowed_debt_caption
-                        bg_color: rgba("#F59E0BFF")
+                        bg_color: rgba("#7C3AEDFF")
                 
                 # Savings Overview (full width)
                 MetricCard:
