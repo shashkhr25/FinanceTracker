@@ -1,35 +1,33 @@
 """MoneyTracker – Final, Working, Modern UI"""
 
-from __future__ import annotations
 import csv
 import os
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Sequence
 from kivymd.app import MDApp
+from kivy.core.window import Window
 from kivy.lang import Builder
 from kivy.metrics import dp
 from kivy.properties import StringProperty, ObjectProperty, BooleanProperty, ListProperty, DictProperty, NumericProperty
 from kivy.clock import Clock
-from kivy.core.window import Window
 from kivy.uix.modalview import ModalView
 from kivy.uix.dropdown import DropDown
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.factory import Factory
-
 from kivy.config import Config
-from kivy.metrics import dp
 
 # Configure window settings
 Config.set('graphics', 'resizable', '1')
 Config.set('graphics', 'borderless', '0')
+Config.set('graphics', 'window_state', 'visible')
+Config.set('graphics', 'position', 'custom')
 
-# Set a reasonable default size
-Window.size = (dp(1280), dp(800))
-
-# Set minimum window size to ensure usability
-Window.minimum_width = dp(320)
-Window.minimum_height = dp(600)
+# Set window size and position
+Config.set('graphics', 'width', '1024')
+Config.set('graphics', 'height', '640')
+Config.set('graphics', 'minimum_width', '800')
+Config.set('graphics', 'minimum_height', '600')
 
 # Function to handle window resize
 def on_window_size(window, width, height):
@@ -1641,11 +1639,32 @@ class MoneyTrackerScreenManager(ScreenManager):
 
 class MoneyTrackerApp(MDApp):
     config_state = DictProperty({})
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.theme_cls.theme_style = "Light"  # or "Dark"
+        self.theme_cls.primary_palette = "Blue"  # You can change the color
+        
     def build(self) -> ScreenManager:
+        # Set window properties
+        Window.size = (1024, 640)
+        Window.minimum_width = 800
+        Window.minimum_height = 600
+        
+        # Center window on screen
+        screen_width = Window.system_size[0]
+        screen_height = Window.system_size[1]
+        window_width = 1024
+        window_height = 640
+        
+        Window.left = max(0, (screen_width - window_width) / 2)
+        Window.top = max(0, (screen_height - window_height) / 2)
+        
         ensure_data_dir()
+        
+        # Load the KV file
         if KV_FILE.exists():
             return Builder.load_file(str(KV_FILE))
-
         return Builder.load_string("\n".join(self._fallback_kv()))
 
     def on_start(self) -> None:
