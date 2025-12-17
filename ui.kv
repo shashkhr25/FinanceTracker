@@ -277,9 +277,9 @@
 
 <AddExpenseDialog@ModalView>:
 	size_hint: None, None
-	size: dp(360), dp(520)
+	size: dp(1024), dp(640)
 	auto_dismiss: False
-	background_color: 0,0,0,0.4
+	background_color: rgba("#bbbfc2ff")
 	parent_screen: None
 	amount_input: amount_field
 	description_input: description_field
@@ -295,7 +295,7 @@
 		spacing: dp(16)
 		canvas.before:
 			Color:
-				rgba: rgba("#10172AFF")
+				rgba: rgba("#F8FAFCFF")
 			RoundedRectangle:
 				pos: self.pos
 				size: self.size
@@ -303,7 +303,7 @@
 		Label:
 			text: "Add Expense"
 			font_size: sp(20)
-			color: rgba("#FFFFFF")
+			color: rgba("#000306ff")
 			bold: True
 			size_hint_y: None
 			height: self.texture_size[1]
@@ -323,35 +323,35 @@
 					row_force_default: True
 					Label:
 						text: "Amount"
-						color: rgba("#E2E8F0FF")
+						color: rgba("#000306ff")
 						valign: "middle"
 						text_size: self.size
 					TextInput:
 						id: amount_field
 						input_filter: "float"
 						hint_text: "0.00"
-						background_color: rgba("#1E293BFF")
-						foreground_color: rgba("#E2E8F0ff")
+						background_color: rgba("#F8FAFCFF")
+						foreground_color: rgba("#000306ff")
 						padding: dp(12)
 						radius: [12,12,12,12]
 						multiline: False
 						on_text_validate: description_field.focus = True
 					Label:
 						text: "Description"
-						color: rgba("#E2E8F0FF")
+						color: rgba("#000306ff")
 						valign: "middle"
 						text_size: self.size
 					TextInput:
 						id: description_field
 						hint_text: "Optional"
-						background_color: rgba("#1E293BFF")
-						foreground_color: rgba("#E2E8F0ff")
+						background_color: rgba("#F8FAFCFF")
+						foreground_color: rgba("#000306ff")
 						padding: dp(12)
 						radius: [12,12,12,12]
 						multiline: False
 					Label:
 						text: "Category"
-						color: rgba("#E2E8F0FF")
+						color: rgba("#000306ff")
 						valign: "middle"
 						text_size: self.size
 					Spinner:
@@ -360,7 +360,7 @@
 						values: ["Food","Home","Transportation","Personal","Rent","House EMI","Gym","Utilities","Shopping","Petrol","Subscription/Recharge","Book","Credit Card Bill", "Credit Card UPI Bill", "Savings","Savings RD","Savings FD","Savings Gold","Debt Cleared","Others"]
 					Label:
 						text: "Device"
-						color: rgba("#E2E8F0FF")
+						color: rgba("#000306ff")
 						valign: "middle"
 						text_size: self.size
 					Spinner:
@@ -369,14 +369,14 @@
 						values: ["Cash","UPI","CREDIT_CARD", "CREDIT_CARD_UPI", "DEBT_BORROWED"]
 					Label:
 						text: "Date"
-						color: rgba("#E2E8F0FF")
+						color: rgba("#000306ff")
 						valign: "middle"
 						text_size: self.size
 					TextInput:
 						id: date_field
 						hint_text: "YYYY-MM-DD"
-						background_color: rgba("#1E293BFF")
-						foreground_color: rgba("#E2E8F0ff")
+						background_color: rgba("#F8FAFCFF")
+						foreground_color: rgba("#000306ff")
 						padding: dp(12)
 						radius: [12,12,12,12]
 						multiline: False
@@ -392,7 +392,7 @@
 						height: dp(32)
 						Label:
 							text: "Shared expense?"
-							color: rgba("#E2E8F0FF")
+							color: rgba("#000306ff")
 							valign: "middle"
 							text_size: self.size
 						Switch:
@@ -401,7 +401,7 @@
 							color: rgba("#22C55EFF")
 					Label:
 						text: "Add participants as comma separated list. Use name:amount for fixed splits."
-						color: rgba("#94A3B8FF")
+						color: rgba("#000306ff")
 						font_size: sp(11)
 						size_hint_y: None
 						height: dp(32)
@@ -412,8 +412,8 @@
 						disabled: not shared_toggle.active
 						opacity: 1 if shared_toggle.active else 0
 						hint_text: "e.g. Alex:500, Sam"
-						background_color: rgba("#1E293BFF")
-						foreground_color: rgba("#E2E8F0FF")
+						background_color: rgba("#F8FAFCFF")
+						foreground_color: rgba("#000306ff")
 						padding: dp(12)
 						radius: [12,12,12,12]
 						size_hint_y: None
@@ -425,8 +425,8 @@
 						disabled: not shared_toggle.active
 						opacity: 1 if shared_toggle.active else 0
 						hint_text: "Optional notes"
-						background_color: rgba("#1E293BFF")
-						foreground_color: rgba("#E2E8F0FF")
+						background_color: rgba("#F8FAFCFF")
+						foreground_color: rgba("#000306ff")
 						padding: dp(12)
 						radius: [12,12,12,12]
 						size_hint_y: None
@@ -446,15 +446,15 @@
 			Button:
 				text: "Add Expense"
 				background_normal: ""
-				background_color: rgba("#EF5350FF")
+				background_color: rgba("#EF4444FF")
 				color: rgba("#FFFFFF")
 				on_release: root.handle_submit()
 
 <AddIncomeDialog@ModalView>:
 	size_hint: None, None
-	size: dp(340), dp(520)
+	size: dp(1024), dp(640)
 	auto_dismiss: False
-	background_color: 0,0,0,0.4
+	background_color: rgba("#bbbfc2ff")
 	parent_screen: None
 	amount_input: amount_field
 	description_input: description_field
@@ -469,7 +469,7 @@
 		spacing: dp(16)
 		canvas.before:
 			Color:
-				rgba: rgba("#10172AFF")
+				rgba: rgba("#F8FAFCFF")
 			RoundedRectangle:
 				pos: self.pos
 				size: self.size
@@ -477,7 +477,7 @@
 		Label:
 			text: "Add Income"
 			font_size: sp(20)
-			color: rgba("#FFFFFF")
+			color: rgba("#000306ff")
 			bold: True
 			size_hint_y: None
 			height: self.texture_size[1]
@@ -495,51 +495,57 @@
 					height: dp(220)
 					Label:
 						text: "Amount"
-						color: rgba("#E2E8F0FF")
+						color: rgba("#000306ff")
+						valign: "middle"
+						text_size: self.size
 						size_hint_y: None
 						height: dp(32)
 					TextInput:
 						id: amount_field
 						input_filter: "float"
 						hint_text: "0.00"
-						background_color: rgba("#1E293BFF")
-						foreground_color: rgba("#E2E8F0ff")
+						background_color: rgba("#F8FAFCFF")
+						foreground_color: rgba("#000306ff")
 						padding: dp(12)
 						radius: [12,12,12,12]
 						multiline: False
 						on_text_validate: description_field.focus = True
 					Label:
 						text: "Description"
-						color: rgba("#E2E8F0FF")
+						color: rgba("#000306ff")
+						valign: "middle"
+						text_size: self.size
 						size_hint_y: None
 						height: dp(32)
 					TextInput:
 						id: description_field
 						hint_text: "Optional"
-						background_color: rgba("#1E293BFF")
-						foreground_color: rgba("#E2E8F0ff")
+						background_color: rgba("#F8FAFCFF")
+						foreground_color: rgba("#000306ff")
 						padding: dp(12)
 						radius: [12,12,12,12]
 						multiline: False
 					Label:
 						text: "Device"
-						color: rgba("#E2E8F0FF")
-						size_hint_y: None
-						height: dp(32)
+						color: rgba("#000306ff")
+						valign: "middle"
+						text_size: self.size
 					Spinner:
 						id: device_spinner
 						text: "Paycheck"
 						values: ["Paycheck", "Home", "Personal split paid", "Refund", "Savings Withdraw", "Taken from Savings", "Others"]
 					Label:
 						text: "Date"
-						color: rgba("#E2E8F0FF")
+						color: rgba("#000306ff")
+						valign: "middle"
+						text_size: self.size
 						size_hint_y: None
 						height: dp(32)
 					TextInput:
 						id: date_field
 						hint_text: "YYYY-MM-DD"
-						background_color: rgba("#1E293BFF")
-						foreground_color: rgba("#E2E8F0ff")
+						background_color: rgba("#F8FAFCFF")
+						foreground_color: rgba("#000306ff")
 						padding: dp(12)
 						radius: [12,12,12,12]
 						multiline: False
@@ -554,7 +560,7 @@
 						height: dp(32)
 						Label:
 							text: "Received in cash?"
-							color: rgba("#E2E8F0FF")
+							color: rgba("#000306ff")
 							valign: "middle"
 							text_size: self.size
 						Switch:
@@ -567,7 +573,7 @@
 						height: dp(32)
 						Label:
 							text: "Shared refund?"
-							color: rgba("#E2E8F0FF")
+							color: rgba("#000306ff")
 							valign: "middle"
 							text_size: self.size
 						Switch:
@@ -576,7 +582,7 @@
 							color: rgba("#22C55EFF")
 					Label:
 						text: "Participants (comma separated: name or name:amount)"
-						color: rgba("#94A3B8FF")
+						color: rgba("#000306ff")
 						font_size: sp(11)
 						size_hint_y: None
 						height: dp(28)
@@ -587,8 +593,8 @@
 						disabled: not shared_toggle.active
 						opacity: 1 if shared_toggle.active else 0
 						hint_text: "e.g. Alex:500, Sam"
-						background_color: rgba("#1E293BFF")
-						foreground_color: rgba("#E2E8F0FF")
+						background_color: rgba("#F8FAFCFF")
+						foreground_color: rgba("#000306ff")
 						padding: dp(12)
 						size_hint_y: None
 						height: dp(46) if shared_toggle.active else 0
@@ -599,8 +605,8 @@
 						disabled: not shared_toggle.active
 						opacity: 1 if shared_toggle.active else 0
 						hint_text: "Optional notes (e.g. March groceries)"
-						background_color: rgba("#1E293BFF")
-						foreground_color: rgba("#E2E8F0FF")
+						background_color: rgba("#F8FAFCFF")
+						foreground_color: rgba("#000306ff")
 						padding: dp(12)
 						size_hint_y: None
 						height: dp(46) if shared_toggle.active else 0
@@ -618,7 +624,7 @@
 			Button:
 				text: "Add Income"
 				background_normal: ""
-				background_color: rgba("#EF5350FF")
+				background_color: rgba("#10B981FF")
 				color: rgba("#FFFFFF")
 				on_release: root.handle_submit()
 
@@ -648,21 +654,21 @@
 	canvas.before:
 		# Outer subtle shadow
 		Color:
-			rgba: rgba("#1E293BFF")
+			rgba: rgba("#F8FAFCFF")
 		RoundedRectangle:
 			pos: self.x - dp(3), self.y - dp(3)
 			size: (self.width + dp(6), self.height + dp(6))
 			radius: [18,18,18,18]
 		# main background
 		Color:
-			rgba: rgba("#0F172AFF")
+			rgba: rgba("#F8FAFCFF")
 		RoundedRectangle:
 			pos: self.pos
 			size: self.size
 			radius: [14,14,14,14]
 		# inner accent
 		Color:
-			rgba: rgba("#1E293BFF")
+			rgba: rgba("#F8FAFCFF")
 		RoundedRectangle:
 			pos: self.x + dp(1), self.y + dp(1)
 			size: (self.width - dp(2), self.height - dp(2))
@@ -672,8 +678,8 @@
 <Spinner>:
 	background_normal: ""
 	background_down: ""
-	background_color: rgba("#1E293BFF")
-	color: rgba("#E2E8F0FF")
+	background_color: rgba("#bbbfc2ff")
+	color: rgba("#000306ff")
 	size_hint_y: None
 	height: dp(40)
 	font_size: sp(14)
@@ -683,7 +689,7 @@
 	option_cls: 'SpinnerOption'
 	canvas.before:
 		Color:
-			rgba: rgba("#1E293BFF")
+			rgba: rgba("#bbbfc2ff")
 		RoundedRectangle:
 			pos: self.pos
 			size: self.size
@@ -694,14 +700,14 @@
 	background_normal: ""
 	background_down: ""
 	background_color: 0,0,0,0
-	color: rgba("#E2E8F0FF")	
+	color: rgba("#000306ff")	
 	font_size: sp(14)
 	padding: [dp(16), dp(12)]
 	size_hint_y: None
 	height: dp(40)
 	canvas.before:
 		Color:
-			rgba: rgba("#334155FF")
+			rgba: rgba("#bbbfc2ff")
 		RoundedRectangle:
 			pos: self.pos
 			size: self.size
@@ -1114,7 +1120,6 @@
                                     pos: self.pos
                                     size: self.size
                                     radius: [12, 12, 12, 12]
-
 
 
 <CategoryTotalsScreen>:
@@ -2370,6 +2375,7 @@
         size_hint: None, None
         size: dp(200), self.texture_size[1] if root.notes_text else 0
         opacity: 1 if root.notes_text else 0
+
 
 MoneyTrackerScreenManager:
 	DashboardScreen:

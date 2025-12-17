@@ -194,7 +194,7 @@ class AddExpenseDialog(ModalView):
             shared_splits=shared_splits,
             shared_notes=shared_notes,
         )
-        self.dismiss()
+        #self.dismiss()
 
 
 class SavingsInitialDialog(ModalView):
@@ -328,7 +328,7 @@ class AddIncomeDialog(ModalView):
             shared_splits=shared_splits,
             shared_notes=shared_notes,
         )
-        self.dismiss()
+        #self.dismiss()
 
 
 class DashboardScreen(Screen):
