@@ -818,14 +818,14 @@
 	spacing: dp(16)
 	canvas.before:
 		Color:
-			rgba: (26/255, 32/255, 45/255, 0.6)
+			rgba: rgba("#dcdcdcff")
 		RoundedRectangle:
 			pos: self.pos
 			size: self.size
 			radius: [14,14,14,14]
 	Label:
 		text: root.category_text
-		color: rgba("#E2E8F0FF")
+		color: rgba("#000306ff")
 		font_size: sp(14)
 		bold: True
 		halign: "left"
@@ -848,8 +848,8 @@
 		height: dp(24)
 		text: root.budget_text
 		hint_text: "Budget"
-		background_color: rgba("#1E293BFF")
-		foreground_color: rgba("#E2E8F0FF")
+		background_color: rgba("#dcdcdcff")
+		foreground_color: rgba("#000306ff")
 		cursor_color: rgba("#38BDF8FF")
 		padding: [dp(8), dp(4)]
 		radius: [12,12,12,12]
@@ -1130,18 +1130,18 @@
 			orientation: "vertical"
 			canvas.before:
 				Color:
-					rgba: rgba("#0B1020FF")
+					rgba: rgba("#F8FAFCFF")
 				Rectangle:
 					pos: self.pos
 					size: self.size
 			TopAppBar:
 				Label:
 					text: "Category Totals"
-					color: rgba("#fff1d6")
+					color: rgba("#000306ff")
 					font_size: sp(20)
 					bold: True
 					text_size: self.size
-					halign: "left"
+					halign: "center"
 					valigh: "middle"
 			BoxLayout:
 				orientation: "vertical"
@@ -1156,8 +1156,8 @@
 					TextInput:
 						id: filter_text
 						hint_text: "Search categories..."
-						background_color: rgba("#1E293BFF")
-						foreground_color: rgba("#E2E8F0FF")
+						background_color: rgba("#F8FAFCFF")
+						foreground_color: rgba("#000306ff")
 						padding: dp(12)
 						radius: [8,8,8,8]
 						multiline: False
@@ -1171,8 +1171,8 @@
 					TextInput:
 						id: filter_month
 						hint_text: "Month (1-12)"
-						background_color: rgba("#1E293BFF")
-						foreground_color: rgba("#E2E8E0FF")
+						background_color: rgba("#F8FAFCFF")
+						foreground_color: rgba("#000306ff")
 						padding: dp(12)
 						radius: [8,8,8,8]
 						size_hint_x: 0.3
@@ -1183,8 +1183,8 @@
 					TextInput:
 						id: filter_year
 						hint_text: "Year"
-						background_color: rgba("#1E293BFF")
-						foreground_color: rgba("#E2E8E0FF")
+						background_color: rgba("#F8FAFCFF")
+						foreground_color: rgba("#000306ff")
 						padding: dp(12)
 						radius: [8,8,8,8]
 						size_hint_x: 0.3
@@ -1199,6 +1199,7 @@
 						height: dp(44)
 						background_color: rgba("#475569FF")
 						color: rgba("#FFFFFF")
+						color: rgba("#FFFFFF")
 						on_release: root.clear_filters()
 					
 			BoxLayout:
@@ -1212,8 +1213,8 @@
 					scroll_type: ['bars', 'content']
 					scroll_timeout: 250
 					bar_width: dp(8)
-					bar_color: rgba("#4B5563FF")
-					bar_inactive_color: rgba("#4B556388")
+					bar_color: rgba("#000306ff")
+					bar_inactive_color: rgba("#FFFFFF")
 					bar_margin: dp(2)
 					do_scroll_x: False
 					do_scroll_y: True
@@ -1354,10 +1355,11 @@
         orientation: "vertical"
         canvas.before:
             Color:
-                rgba: rgba("#0B1020FF")
+                rgba: rgba("#F8FAFCFF")
             Rectangle:
                 pos: self.pos
                 size: self.size
+        
         TopAppBar:
             Button:
                 size_hint: None, None
@@ -1366,106 +1368,418 @@
                 font_size: sp(20)
                 background_normal: ""
                 background_color: 0,0,0,0
-                color: rgba("#E2E8F0FF")
+                color: rgba("#000306ff")
                 on_release: app.root.current = "dashboard"
             Label:
                 text: "Net Worth"
-                color: rgba("#fff1d6")
+                color: rgba("#000306ff")
                 font_size: sp(20)
                 bold: True
                 text_size: self.size
-                halign: "left"
-                valigh: "middle"
+                halign: "center"
+                valign: "middle"  # Fixed typo: was valigh
+                size_hint_x: 0.8  # Added to center the title
+        
+        # Main Content
         ScrollView:
             do_scroll_x: False
+            effect_cls: "ScrollEffect"
+            bar_width: dp(6)
+            bar_color: rgba("#3B82F666")
+            bar_inactive_color: rgba("#3B82F633")
+            
             BoxLayout:
                 orientation: "vertical"
-                padding: dp(24)
-                spacing: dp(16)
+                padding: [dp(24), dp(16), dp(24), dp(32)]
+                spacing: dp(24)
                 size_hint_y: None
                 height: self.minimum_height
                 
-                # Liquid Balance and Total Debt (top row)
+                # Top Metrics Row
                 BoxLayout:
-                    orientation: "horizontal"
+                    id: metrics_row
+                    orientation: 'horizontal'
                     size_hint_y: None
-                    height: dp(160)
-                    spacing: dp(18)
+                    height: dp(140)
+                    spacing: dp(8)
+                    padding: [dp(8), 0, dp(8), 0]
                     
-                    # Liquid Balance
-                    MetricCard:
-                        metric_title: "Liquid Balance"
-                        metric_value: root.liquid_balance_text
-                        metric_caption: root.liquid_balance_caption
-                        bg_color: rgba("#1E293BFF")
-                    
-                    # Credit Card Debt
-                    MetricCard:
-                        metric_title: "Credit Card Debt"
-                        metric_value: root.credit_card_debt_text
-                        metric_caption: root.credit_card_debt_caption
-                        bg_color: rgba("#7C3AEDFF")
-                    # Borrowed Debt
-                    MetricCard:
-                        metric_title: "Money Owed"
-                        metric_value: root.borrowed_debt_text
-                        metric_caption: root.borrowed_debt_caption
-                        bg_color: rgba("#7C3AEDFF")
-                
-                # Savings Overview (full width)
-                MetricCard:
+                    # Balance Card
+                    BoxLayout:
+                        orientation: "vertical"
+                        padding: [dp(16), dp(16)]
+                        spacing: dp(8)
+                        size_hint_x: 0.33
+                        size_hint_y: None
+                        height: dp(140)
+                        canvas.before:
+                            Color:
+                                rgba: rgba("#10B981FF")
+                            RoundedRectangle:
+                                pos: self.pos
+                                size: self.size
+                                radius: [16, 16, 16, 16]
+                        
+                        Label:
+                            text: "Total Savings"
+                            font_size: sp(14)
+                            color: rgba("#F8FAFCFF")
+                            size_hint_y: None
+                            height: self.texture_size[1]
+                            halign: "left"
+                            text_size: self.size
+                        
+                        Label:
+                            text: root.total_savings_text
+                            font_size: sp(32)
+                            color: rgba("#F8FAFCFF")
+                            size_hint_y: None
+                            height: self.texture_size[1]
+                            halign: "left"
+                            text_size: self.size
+                            bold: True
+                        
+                        Label:
+                            text: "Combined value of all savings"
+                            font_size: sp(12)
+                            color: rgba("#F8FAFCFF")
+                            size_hint_y: None
+                            height: self.texture_size[1]
+                            halign: "left"
+                            text_size: self.size
+						
+					# Balance Card
+                    BoxLayout:
+                        orientation: "vertical"
+                        padding: [dp(16), dp(16)]
+                        spacing: dp(8)
+                        size_hint_x: 0.33
+                        size_hint_y: None
+                        height: dp(140)
+                        canvas.before:
+                            Color:
+                                rgba: rgba("#57595bff")
+                            RoundedRectangle:
+                                pos: self.pos
+                                size: self.size
+                                radius: [16, 16, 16, 16]
+                        
+                        Label:
+                            text: "Savings Account"
+                            font_size: sp(14)
+                            color: rgba("#94A3B8FF")
+                            size_hint_y: None
+                            height: self.texture_size[1]
+                            halign: "left"
+                            text_size: self.size
+                        
+                        Label:
+                            text: root.savings_display
+                            font_size: sp(32)
+                            color: rgba("#F8FAFCFF")
+                            size_hint_y: None
+                            height: self.texture_size[1]
+                            halign: "left"
+                            text_size: self.size
+                            bold: True
+                        
+                        Label:
+                            text: "Regular savings"
+                            font_size: sp(12)
+                            color: rgba("#94A3B8FF")
+                            size_hint_y: None
+                            height: self.texture_size[1]
+                            halign: "left"
+                            text_size: self.size
+
+					# Balance Card
+                    BoxLayout:
+                        orientation: "vertical"
+                        padding: [dp(16), dp(16)]
+                        spacing: dp(8)
+                        size_hint_x: 0.33
+                        size_hint_y: None
+                        height: dp(140)
+                        canvas.before:
+                            Color:
+                                rgba: rgba("#57595bff")
+                            RoundedRectangle:
+                                pos: self.pos
+                                size: self.size
+                                radius: [16, 16, 16, 16]
+                        
+                        Label:
+                            text:  "Liquid Balance"
+                            font_size: sp(14)
+                            color: rgba("#94A3B8FF")
+                            size_hint_y: None
+                            height: self.texture_size[1]
+                            halign: "left"
+                            text_size: self.size
+                        
+                        Label:
+                            text: root.liquid_balance_text
+                            font_size: sp(32)
+                            color: rgba("#F8FAFCFF")
+                            size_hint_y: None
+                            height: self.texture_size[1]
+                            halign: "left"
+                            text_size: self.size
+                            bold: True
+                        
+                        Label:
+                            text:  root.liquid_balance_caption
+                            font_size: sp(12)
+                            color: rgba("#94A3B8FF")
+                            size_hint_y: None
+                            height: self.texture_size[1]
+                            halign: "left"
+                            text_size: self.size
+                BoxLayout:
+                    id: metrics_row
+                    orientation: 'horizontal'
                     size_hint_y: None
-                    height: dp(120)
-                    metric_title: "Total Savings"
-                    metric_value: root.total_savings_text
-                    metric_caption: "Combined value of all savings"
-                    bg_color: rgba("#1E293BFF")
-                
-                # Savings Breakdown (2x2 grid)
-                GridLayout:
-                    cols: 2
-                    spacing: dp(16)
+                    height: dp(140)
+                    spacing: dp(8)
+                    padding: [dp(8), 0, dp(8), 0]
+                    
+                    # Balance Card
+                    BoxLayout:
+                        orientation: "vertical"
+                        padding: [dp(16), dp(16)]
+                        spacing: dp(8)
+                        size_hint_x: 0.33
+                        size_hint_y: None
+                        height: dp(140)
+                        canvas.before:
+                            Color:
+                                rgba: rgba("#57595bff")
+                            RoundedRectangle:
+                                pos: self.pos
+                                size: self.size
+                                radius: [16, 16, 16, 16]
+                        
+                        Label:
+                            text: "Fixed Deposit"
+                            font_size: sp(14)
+                            color: rgba("#94A3B8FF")
+                            size_hint_y: None
+                            height: self.texture_size[1]
+                            halign: "left"
+                            text_size: self.size
+                        
+                        Label:
+                            text: root.savings_fd_display
+                            font_size: sp(32)
+                            color: rgba("#F8FAFCFF")
+                            size_hint_y: None
+                            height: self.texture_size[1]
+                            halign: "left"
+                            text_size: self.size
+                            bold: True
+                        
+                        Label:
+                            text: "Fixed deposits"
+                            font_size: sp(12)
+                            color: rgba("#94A3B8FF")
+                            size_hint_y: None
+                            height: self.texture_size[1]
+                            halign: "left"
+                            text_size: self.size
+						
+					# Balance Card
+                    BoxLayout:
+                        orientation: "vertical"
+                        padding: [dp(16), dp(16)]
+                        spacing: dp(8)
+                        size_hint_x: 0.33
+                        size_hint_y: None
+                        height: dp(140)
+                        canvas.before:
+                            Color:
+                                rgba: rgba("#57595bff")
+                            RoundedRectangle:
+                                pos: self.pos
+                                size: self.size
+                                radius: [16, 16, 16, 16]
+                        
+                        Label:
+                            text: "Recurring Deposit"
+                            font_size: sp(14)
+                            color: rgba("#94A3B8FF")
+                            size_hint_y: None
+                            height: self.texture_size[1]
+                            halign: "left"
+                            text_size: self.size
+                        
+                        Label:
+                            text: root.savings_rd_display
+                            font_size: sp(32)
+                            color: rgba("#F8FAFCFF")
+                            size_hint_y: None
+                            height: self.texture_size[1]
+                            halign: "left"
+                            text_size: self.size
+                            bold: True
+                        
+                        Label:
+                            text: "RD accounts"
+                            font_size: sp(12)
+                            color: rgba("#94A3B8FF")
+                            size_hint_y: None
+                            height: self.texture_size[1]
+                            halign: "left"
+                            text_size: self.size
+
+					# Balance Card
+                    BoxLayout:
+                        orientation: "vertical"
+                        padding: [dp(16), dp(16)]
+                        spacing: dp(8)
+                        size_hint_x: 0.33
+                        size_hint_y: None
+                        height: dp(140)
+                        canvas.before:
+                            Color:
+                                rgba: rgba("#f0d120ff")
+                            RoundedRectangle:
+                                pos: self.pos
+                                size: self.size
+                                radius: [16, 16, 16, 16]
+                        
+                        Label:
+                            text:   "Gold"
+                            font_size: sp(14)
+                            color: rgba("#94A3B8FF")
+                            size_hint_y: None
+                            height: self.texture_size[1]
+                            halign: "left"
+                            text_size: self.size
+                        
+                        Label:
+                            text: root.savings_gold_display
+                            font_size: sp(32)
+                            color: rgba("#F8FAFCFF")
+                            size_hint_y: None
+                            height: self.texture_size[1]
+                            halign: "left"
+                            text_size: self.size
+                            bold: True
+                        
+                        Label:
+                            text: "Gold savings"
+                            font_size: sp(12)
+                            color: rgba("#94A3B8FF")
+                            size_hint_y: None
+                            height: self.texture_size[1]
+                            halign: "left"
+                            text_size: self.size
+
+                # Top Metrics Row
+                BoxLayout:
+                    id: metrics_row
+                    orientation: 'horizontal'
                     size_hint_y: None
-                    height: dp(240)
+                    height: dp(140)
+                    spacing: dp(8)
+                    padding: [dp(8), 0, dp(8), 0]
                     
-                    # Regular Savings
-                    MetricCard:
-                        metric_title: "Savings Account"
-                        metric_value: root.savings_display
-                        metric_caption: "Regular savings"
-                        bg_color: rgba("#1E293BFF")
-                    
-                    # Fixed Deposit
-                    MetricCard:
-                        metric_title: "Fixed Deposit"
-                        metric_value: root.savings_fd_display
-                        metric_caption: "Fixed deposits"
-                        bg_color: rgba("#1E293BFF")
-                    
-                    # Recurring Deposit
-                    MetricCard:
-                        metric_title: "Recurring Deposit"
-                        metric_value: root.savings_rd_display
-                        metric_caption: "RD accounts"
-                        bg_color: rgba("#1E293BFF")
-                    
-                    # Gold
-                    MetricCard:
-                        metric_title: "Gold"
-                        metric_value: root.savings_gold_display
-                        metric_caption: "Gold investments"
-                        bg_color: rgba("#1E293BFF")
+                    # Balance Card
+                    BoxLayout:
+                        orientation: "vertical"
+                        padding: [dp(16), dp(16)]
+                        spacing: dp(8)
+                        size_hint_x: 0.33
+                        size_hint_y: None
+                        height: dp(140)
+                        canvas.before:
+                            Color:
+                                rgba: rgba("#EF4444FF")
+                            RoundedRectangle:
+                                pos: self.pos
+                                size: self.size
+                                radius: [16, 16, 16, 16]
+                        
+                        Label:
+                            text: "Credit Card Debt"
+                            font_size: sp(14)
+                            color: rgba("#F8FAFCFF")
+                            size_hint_y: None
+                            height: self.texture_size[1]
+                            halign: "left"
+                            text_size: self.size
+                        
+                        Label:
+                            text: root.credit_card_debt_text
+                            font_size: sp(32)
+                            color: rgba("#F8FAFCFF")
+                            size_hint_y: None
+                            height: self.texture_size[1]
+                            halign: "left"
+                            text_size: self.size
+                            bold: True
+                        
+                        Label:
+                            text: root.credit_card_debt_caption
+                            font_size: sp(12)
+                            color: rgba("#F8FAFCFF")
+                            size_hint_y: None
+                            height: self.texture_size[1]
+                            halign: "left"
+                            text_size: self.size
+                    BoxLayout:
+                        orientation: "vertical"
+                        padding: [dp(16), dp(16)]
+                        spacing: dp(8)
+                        size_hint_x: 0.33
+                        size_hint_y: None
+                        height: dp(140)
+                        canvas.before:
+                            Color:
+                                rgba: rgba("#EF4444FF")
+                            RoundedRectangle:
+                                pos: self.pos
+                                size: self.size
+                                radius: [16, 16, 16, 16]
+                        
+                        Label:
+                            text:  "Money Owed"
+                            font_size: sp(14)
+                            color: rgba("#F8FAFCFF")
+                            size_hint_y: None
+                            height: self.texture_size[1]
+                            halign: "left"
+                            text_size: self.size
+                        
+                        Label:
+                            text: root.borrowed_debt_text	
+                            font_size: sp(32)
+                            color: rgba("#F8FAFCFF")
+                            size_hint_y: None
+                            height: self.texture_size[1]
+                            halign: "left"
+                            text_size: self.size
+                            bold: True
+                        
+                        Label:
+                            text: root.borrowed_debt_caption
+                            font_size: sp(12)
+                            color: rgba("#F8FAFCFF")
+                            size_hint_y: None
+                            height: self.texture_size[1]
+                            halign: "left"
+                            text_size: self.size
+
 
 <UserScreen>:
     name: "user"
-    
     BoxLayout:
         orientation: "vertical"
         padding: [dp(32), dp(64), dp(32), dp(32)]
         spacing: dp(24)
         canvas.before:
             Color:
-                rgba: rgba("#0B1020FF")
+                rgba: rgba("#F8FAFCFF")
             Rectangle:
                 pos: self.pos
                 size: self.size
@@ -1473,8 +1787,8 @@
         # Title
         Label:
             text: "Welcome to FinanceTracker"
-            font_size: sp(32)
-            color: rgba("#E2E8F0FF")
+            font_size: sp(70)
+            color: rgba("#F8FAFCFF")
             size_hint_y: None
             height: self.texture_size[1]
             bold: True
@@ -1491,20 +1805,6 @@
             halign: "center"
             text_size: self.width, None
         
-        # User list
-        ScrollView:
-            size_hint_y: 0.6
-            do_scroll_x: False
-            bar_width: dp(4)
-            bar_color: rgba("#3B82F6FF")
-            
-            GridLayout:
-                id: user_list
-                cols: 1
-                spacing: dp(12)
-                size_hint_y: None
-                height: self.minimum_height
-                padding: [dp(8), dp(8)]
         
         # New user input
         TextInput:
@@ -1541,20 +1841,30 @@
         orientation: "vertical"
         canvas.before:
             Color:
-                rgba: rgba("#0B1020FF")
+                rgba: rgba("#F8FAFCFF")
             Rectangle:
                 pos: self.pos
                 size: self.size
         TopAppBar:
-        Button:
-            size_hint: None, None
-            size: dp(44), dp(44)
-            text: "<-"
-            font_size: sp(20)
-            background_normal: ""
-            background_color: 0,0,0,0
-            color: rgba("#E2E8F0FF")
-            on_release: app.root.current = "dashboard"
+            Button:
+                size_hint: None, None
+                size: dp(44), dp(44)
+                text: "<-"
+                font_size: sp(20)
+                background_normal: ""
+                background_color: 0,0,0,0
+                color: rgba("#000306ff")
+                on_release: app.root.current = "dashboard"
+            Label:
+                text: "Settings"
+                color: rgba("#000306ff")
+                font_size: sp(20)
+                bold: True
+                text_size: self.size
+                halign: "center"
+                valign: "middle"  # Fixed typo: was valigh
+                size_hint_x: 0.8  # Added to center the title
+
 		ScrollView:
 			do_scroll_x: False
 			GridLayout:
@@ -1565,10 +1875,10 @@
 				spacing: dp(16)
 				GlassCard:
 					Label:
-						text: "General"
+						text: "Initial inputs"
 						size_hint_y: None
 						height: self.texture_size[1]
-						color: rgba("#E0F2FEFF")
+						color: rgba("#bbbfc2ff")
 						bold: True
 					GridLayout:
 						cols:2
@@ -1577,15 +1887,15 @@
 							id:	initial_balance_input
 							multiline: False
 							hint_text: "Initial Bank Balance"
-							background_color: rgba("#1E293BFF")
-							foreground_color: rgba("#E2E8F0FF")
+							background_color: rgba("#F8FAFCFF")
+							foreground_color: rgba("#000306ff")
 							padding: dp(16)
 							radius: [12,12,12,12]
 						TextInput:
 							id:	initial_cash_input
 							hint_text: "Initial Cash Balance"
-							background_color: rgba("#1E293BFF")
-							foreground_color: rgba("#E2E8F0FF")
+							background_color: rgba("#F8FAFCFF")
+							foreground_color: rgba("#000306ff")
 							padding: dp(16)
 							radius: [12,12,12,12]
 							multiline: False
@@ -1597,7 +1907,7 @@
 							text: "Save"
 							size_hint: None, None
 							size: dp(160), dp(44)
-							background_color: rgba("#22C55EFF")
+							background_color: rgba("#10B981FF")
 							color: rgba("#FFFFFF")
 							on_release: root.save_settings()
 		
@@ -1605,7 +1915,6 @@
 			orientation: "horizontal"
 			spacing: dp(12)
 			padding: dp(20)
-			# Removed Start New Month button
 			Button:
 				text: "Clear Outstanding Debt"
 				size_hint_y: None

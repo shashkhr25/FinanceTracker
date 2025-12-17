@@ -1423,7 +1423,7 @@ class CategoryTotalsScreen(Screen):
             if budget > 0:
                 variance = budget - totals
                 variance_text = f"{variance:,.2f}"
-                variance_color = "#86EFACFF" if variance >=0 else "#FCA5A5FF"
+                variance_color = "#10B981FF" if variance >=0 else "#EF4444FF"
                 budget_text = f"{budget:,.2f}"
             else:
                 variance_text = "-"
@@ -1433,7 +1433,7 @@ class CategoryTotalsScreen(Screen):
                 {
                     "category_text":category,
                     "amount_text": f"{totals:,.2f}",
-                    "amount_color": "#FCA5A5FF",
+                    "amount_color": "#000306ff",
                     "budget_text": budget_text,
                     "variance_text":variance_text,
                     "variance_color":variance_color,

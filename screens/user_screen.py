@@ -9,7 +9,7 @@ from kivy.uix.popup import Popup
 from kivy.app import App
 from kivy.metrics import dp
 from kivy.properties import ObjectProperty
-
+from kivy.utils import rgba
 from user_manager import user_manager
 
 class UserScreen(Screen):
@@ -25,10 +25,10 @@ class UserScreen(Screen):
         
         # Title
         self.title = Label(
-            text="Welcome to FinanceTracker",
-            font_size='24sp',
+            text="Welcome to Finance Tracker",
+            font_size='30sp',
             size_hint_y=0.2,
-            color=(0.2, 0.2, 0.2, 1)
+            color= rgba("#000306ff")
         )
         layout.add_widget(self.title)
         
@@ -37,7 +37,7 @@ class UserScreen(Screen):
             text="Select or create a user to continue",
             font_size='16sp',
             size_hint_y=0.1,
-            color=(0.4, 0.4, 0.4, 1)
+            color=rgba("#000306ff")
         )
         layout.add_widget(subtitle)
         
@@ -45,8 +45,8 @@ class UserScreen(Screen):
         from kivy.uix.scrollview import ScrollView
         from kivy.uix.gridlayout import GridLayout
         
-        scroll_view = ScrollView(do_scroll_x=False)
-        self.user_list = GridLayout(cols=1, spacing=10, size_hint_y=None)
+        scroll_view = ScrollView(do_scroll_x=False, size_hint=(1, 1),bar_width=dp(6),scroll_type=['bars', 'content'])
+        self.user_list = GridLayout(cols=1, spacing=12,padding=[dp(16), dp(16)], size_hint_y=None)
         self.user_list.bind(minimum_height=self.user_list.setter('height'))
         scroll_view.add_widget(self.user_list)
         layout.add_widget(scroll_view)
@@ -56,8 +56,8 @@ class UserScreen(Screen):
             hint_text="Enter new username",
             size_hint_y=0.1,
             multiline=False,
-            background_color=(1, 1, 1, 1),
-            foreground_color=(0, 0, 0, 1),
+            background_color = rgba("#F8FAFCFF"),
+            foreground_color = rgba("#000306ff"),
             padding=[10, 10]
         )
         layout.add_widget(self.new_user_input)
