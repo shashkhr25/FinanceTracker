@@ -545,8 +545,12 @@ def summarize_shared_expenses(
 ) -> Tuple[Dict[str, float], List[Tuple[Transaction, Dict[str, float]]]]:
     """Return per-person totals plus detailed allocations for shared expenses."""
 
-    participant_key = participant_filter.strip().lower() if participant_filter else None
-    category_key = category_filter.strip().lower() if category_filter else None
+    participant_key = (participant_filter.strip().lower() 
+                      if participant_filter and participant_filter.strip() 
+                      else None)
+    category_key = (category_filter.strip().lower() 
+                   if category_filter and category_filter.strip() 
+                   else None)
 
     summary: Dict[str, float] = {}
     details: List[Tuple[Transaction, Dict[str, float]]] = []

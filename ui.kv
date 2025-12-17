@@ -246,7 +246,7 @@
 		background_normal: ""
 		background_color: 0,0,0,0
 		color: rgba("#FFFFFF")
-		on_release: app.root.current = "shared_expenses"
+		on_release: app.root.current = "shared"
 	Button:
 		text: "Networth"
 		background_normal: ""
@@ -788,6 +788,7 @@
 			background_color: 0, 0, 0, 0
 			color: rgba("#86EFACFF")
 			font_size: sp(16)
+			text: "Edit"
 			bold: True
 			on_release: app.root.get_screen("transactions").edit_transaction(root.transaction_id)
 		Button:

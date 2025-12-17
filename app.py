@@ -38,6 +38,9 @@ from kivymd.uix.menu import MDDropdownMenu
 from kivymd.theming import ThemableBehavior
 from kivymd.uix.list import OneLineIconListItem, MDList
 
+# Import storage functions
+from storage import read_transactions, write_transactions, ensure_data_dir
+
 # Import user management
 from user_manager import UserManager
 user_manager = UserManager()
@@ -979,44 +982,48 @@ class TransactionsScreen(Screen):
         
     def delete_transaction(self, transaction_id: str) -> None:
         """Delete a transaction by its ID and refresh the list."""
-        # Read all transactions
-        rows = read_transactions()
-        
-        # Filter out the transaction to delete
-        updated_rows = [row for row in rows if row['id'] != transaction_id]
-        
-        # If no transaction was deleted, do nothing
-        if len(updated_rows) == len(rows):
-            print(f"No transaction found with ID: {transaction_id}")
-            return
+        try:
+            # Read all transactions
+            rows = read_transactions()
             
-        # Write the updated transactions back to the file
-        with open('data/transactions.csv', 'w', newline='', encoding='utf-8') as f:
-            writer = csv.DictWriter(f, fieldnames=CSV_COLUMNS)
-            writer.writeheader()
-            writer.writerows(updated_rows)
+            # Filter out the transaction to delete
+            updated_rows = [row for row in rows if row['id'] != transaction_id]
             
-        print(f"Deleted transaction with ID: {transaction_id}")
-        
-        # Refresh the transactions list
-        self.refresh()
-        
-        # Refresh other screens if they exist
-        if self.manager:
-            if "dashboard" in self.manager.screen_names:
-                dashboard = self.manager.get_screen("dashboard")
-                if hasattr(dashboard, 'refresh_metrics'):
-                    dashboard.refresh_metrics()
-                    
-            if "category_totals" in self.manager.screen_names:
-                category_screen = self.manager.get_screen("category_totals")
-                if hasattr(category_screen, 'refresh'):
-                    category_screen.refresh()
-                    
-            if "networth" in self.manager.screen_names:
-                networth_screen = self.manager.get_screen("networth")
-                if hasattr(networth_screen, 'refresh'):
-                    networth_screen.refresh()
+            # If no transaction was deleted, do nothing
+            if len(updated_rows) == len(rows):
+                print(f"No transaction found with ID: {transaction_id}")
+                return
+                
+            # Write the updated transactions back to the file using the proper storage function
+            write_transactions(updated_rows)
+            
+            print(f"Deleted transaction with ID: {transaction_id}")
+            
+            # Refresh the transactions list
+            self.refresh()
+            
+            # Refresh other screens if they exist
+            if self.manager:
+                if "dashboard" in self.manager.screen_names:
+                    dashboard = self.manager.get_screen("dashboard")
+                    if hasattr(dashboard, 'refresh_metrics'):
+                        dashboard.refresh_metrics()
+                        
+                if "category_totals" in self.manager.screen_names:
+                    category_screen = self.manager.get_screen("category_totals")
+                    if hasattr(category_screen, 'refresh'):
+                        category_screen.refresh()
+                        
+                if "networth" in self.manager.screen_names:
+                    networth_screen = self.manager.get_screen("networth")
+                    if hasattr(networth_screen, 'refresh'):
+                        networth_screen.refresh()
+            
+        except Exception as e:
+            print(f"Error deleting transaction: {str(e)}")
+            # Show error to user if needed
+            if hasattr(self, 'show_popup'):
+                self.show_popup("Error", f"Failed to delete transaction: {str(e)}")
                     
     def edit_transaction(self, transaction_id: str) -> None:
         """Edit a transaction by its ID."""
@@ -1058,24 +1065,28 @@ class TransactionsScreen(Screen):
             
         if hasattr(dialog, 'description_input') and dialog.description_input:
             dialog.description_input.text = transaction_to_edit.get('description', '')
-            
+        
+        # Set category if available
+        if hasattr(dialog, 'category_input') and dialog.category_input:
+            dialog.category_input.text = transaction_to_edit.get('category', '')
+        
+        # Set date if available
         if hasattr(dialog, 'date_input') and dialog.date_input:
             dialog.date_input.text = transaction_to_edit.get('date', date.today().isoformat())
         
         # Handle device selection
         if hasattr(dialog, 'device_spinner') and dialog.device_spinner:
             device = transaction_to_edit.get('device', '')
-            # For income, we need to handle the device spinner differently
             if is_income:
-                # Map the device to the appropriate value in the income dialog
+                # For income, handle special case for cash
                 if device.upper() == 'CASH':
-                    dialog.device_spinner.text = 'Paycheck'  # Default for cash income
+                    dialog.device_spinner.text = 'Paycheck'
                     if hasattr(dialog, 'cash_toggle'):
                         dialog.cash_toggle = True
                 else:
                     dialog.device_spinner.text = device.capitalize() if device else 'Paycheck'
             else:
-                # For expenses, just set the device as is
+                # For expenses, set the device as is
                 if device.upper() in [d.upper() for d in dialog.device_spinner.values]:
                     dialog.device_spinner.text = device.upper()
                 elif device:  # If device not in standard values but exists, add it
@@ -1113,28 +1124,17 @@ class TransactionsScreen(Screen):
                         dialog.shared_participants_input.text = transaction_to_edit.get('shared_participants', '')
                 
                 # Show/hide the shared fields based on the shared flag
-                if hasattr(dialog, 'shared_notes_input'):
-                    dialog.shared_notes_input.text = transaction_to_edit.get('shared_notes', '')
-                    dialog.shared_notes_input.disabled = not shared_flag
-                    dialog.shared_notes_input.opacity = 1.0 if shared_flag else 0.0
-                    
-                    # Force update the layout to show/hide the shared fields
-                    if hasattr(dialog, 'shared_participants_input'):
-                        dialog.shared_participants_input.disabled = not shared_flag
-                        dialog.shared_participants_input.opacity = 1.0 if shared_flag else 0.0
-                        dialog.shared_participants_input.size_hint_y = 1.0 if shared_flag else 0.0
-                        dialog.shared_participants_input.height = dp(46) if shared_flag else 0
-                        
-                        # Trigger a layout update
-                        if dialog.shared_participants_input.parent:
-                            dialog.shared_participants_input.parent.do_layout()
+                dialog.shared_participants_input.disabled = not shared_flag
+                dialog.shared_participants_input.opacity = 1.0 if shared_flag else 0.0
+                dialog.shared_participants_input.size_hint_y = 1.0 if shared_flag else 0.0
+                dialog.shared_participants_input.height = dp(46) if shared_flag else 0
         
-        # Open the dialog
-        dialog.open()
+        if hasattr(dialog, 'shared_notes_input'):
+            dialog.shared_notes_input.text = transaction_to_edit.get('shared_notes', '')
+            dialog.shared_notes_input.disabled = not shared_flag
+            dialog.shared_notes_input.opacity = 1.0 if shared_flag else 0.0
         
         # Override the submit handler to use our custom save method
-        original_handle_submit = dialog.handle_submit
-        
         def handle_submit_wrapper():
             # Get the transaction data from the dialog
             try:
@@ -1196,15 +1196,16 @@ class TransactionsScreen(Screen):
             transaction_updated = False
             for row in rows:
                 if row['id'] == transaction_id:
-                    # Format amount to 2 decimal places
+                    # Update the transaction fields
                     row['amount'] = f"{amount:.2f}"
                     row['description'] = description
                     row['category'] = category
                     row['device'] = device
                     row['date'] = txn_date.strftime('%Y-%m-%d')
                     row['shared_flag'] = '1' if shared_flag else '0'
-                    row['shared_splits'] = shared_participants  # Using shared_splits instead of shared_participants
+                    row['shared_splits'] = shared_participants
                     row['shared_notes'] = shared_notes
+                    row['timestamp'] = datetime.now().isoformat()  # Update the timestamp
                     transaction_updated = True
                     break
             
@@ -1212,8 +1213,40 @@ class TransactionsScreen(Screen):
                 print(f"Error: Transaction with ID {transaction_id} not found")
                 return
             
-            # Ensure data directory exists
-            os.makedirs('data', exist_ok=True)
+            # Save the updated transactions
+            write_transactions(rows)
+            
+            # Refresh the transactions list
+            self.refresh()
+            
+            # Refresh other screens if they exist
+            if self.manager:
+                if "dashboard" in self.manager.screen_names:
+                    dashboard = self.manager.get_screen("dashboard")
+                    if hasattr(dashboard, 'refresh_metrics'):
+                        dashboard.refresh_metrics()
+                        
+                if "category_totals" in self.manager.screen_names:
+                    category_screen = self.manager.get_screen("category_totals")
+                    if hasattr(category_screen, 'refresh'):
+                        category_screen.refresh()
+                        
+                if "networth" in self.manager.screen_names:
+                    networth_screen = self.manager.get_screen("networth")
+                    if hasattr(networth_screen, 'refresh'):
+                        networth_screen.refresh()
+                        
+                if "shared_expenses" in self.manager.screen_names:
+                    shared_screen = self.manager.get_screen("shared_expenses")
+                    if hasattr(shared_screen, 'refresh'):
+                        shared_screen.refresh()
+            
+            print(f"Successfully updated transaction: {description}")
+            
+        except Exception as e:
+            print(f"Error saving transaction: {str(e)}")
+            if hasattr(self, 'show_popup'):
+                self.show_popup("Error", f"Failed to save transaction: {str(e)}")
             
             # Write the updated transactions back to the file
             with open('data/transactions.csv', 'w', newline='', encoding='utf-8') as f:
