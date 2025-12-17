@@ -896,30 +896,17 @@
                 padding: [dp(16), 0, dp(16), 0]
                 canvas.before:
                     Color:
-                        rgba: rgba("#0F172AFF")  # Dark blue-gray
+                        rgba: rgba("#F8FAFCFF")  # Dark blue-gray
                     Rectangle:
                         pos: self.pos
                         size: self.size
-                
-                Label:
-                    text: "Dashboard"
-                    font_size: sp(20)
-                    bold: True
-                    color: rgba("#F8FAFCFF")
-                    halign: "left"
-                    valign: "middle"
-                    text_size: self.size
-                    padding_x: dp(16)
-                
-                Widget:  # Spacer
-                    size_hint_x: 0.6
                 
                 # Date/Time Display
                 Label:
                     text: root.current_date
                     font_size: sp(14)
-                    color: rgba("#94A3B8FF")
-                    halign: "right"
+                    color: rgba("#000813ff")
+                    halign: "center"
                     valign: "middle"
                     text_size: self.size
                     padding_x: dp(16)
