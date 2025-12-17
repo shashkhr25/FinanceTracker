@@ -1073,9 +1073,9 @@
                         # Add Expense Button
                         Button:
                             id: add_expense_btn
-                            text: "Add Expense"
+                            text: "(-) Add Expense"
                             size_hint_x: 1
-                            size_hint_y: None
+                            size_hint_y: 1
                             height: dp(60)
                             background_normal: ""
                             background_color: rgba("#EF4444FF")
@@ -1090,34 +1090,14 @@
                                     pos: self.pos
                                     size: self.size
                                     radius: [12, 12, 12, 12]
-                            
-                            BoxLayout:
-                                orientation: "horizontal"
-                                spacing: dp(8)
-                                padding: [dp(16), 0]
-                                
-                                Label:
-                                    text: "+ Expense"
-                                    font_size: sp(16)
-                                    color: rgba("#FFFFFFFF")
-                                    bold: True
-                                    size_hint_x: None
-                                    width: self.texture_size[0]
-                                
-                                Label:
-                                    text: "+"
-                                    font_size: sp(20)
-                                    color: rgba("#FFFFFFFF")
-                                    bold: True
-                                    size_hint: None, None
-                                    size: dp(24), dp(24)
+ 
                         
                         # Add Income Button
                         Button:
                             id: add_income_btn
-                            text: "Add Income"
+                            text: "(+) Add Income"
                             size_hint_x: 1
-                            size_hint_y: None
+                            size_hint_y: 1
                             height: dp(60)
                             background_normal: ""
                             background_color: rgba("#10B981FF")
@@ -1132,27 +1112,7 @@
                                     pos: self.pos
                                     size: self.size
                                     radius: [12, 12, 12, 12]
-                            
-                            BoxLayout:
-                                orientation: "horizontal"
-                                spacing: dp(8)
-                                padding: [dp(16), 0]
-                                
-                                Label:
-                                    text: "+ Income"
-                                    font_size: sp(16)
-                                    color: rgba("#FFFFFFFF")
-                                    bold: True
-                                    size_hint_x: None
-                                    width: self.texture_size[0]
-                                
-                                Label:
-                                    text: "+"
-                                    font_size: sp(20)
-                                    color: rgba("#FFFFFFFF")
-                                    bold: True
-                                    size_hint: None, None
-                                    size: dp(24), dp(24)	
+
 
 
 <CategoryTotalsScreen>:
