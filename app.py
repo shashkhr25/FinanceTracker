@@ -576,7 +576,8 @@ class DashboardScreen(Screen):
         
         # Update the main balance display
         self.current_balance_text = f"{balance_value:,.2f}"
-        self.balance_caption = f"Account Balance {(balance_value-cash_balance_value):,.2f} \n" + f"Cash balance: {cash_balance_value:.2f}"
+        account_balance = balance_value - cash_balance_value
+        self.balance_caption = f"Account: ₹{account_balance:,.2f} | Cash: ₹{cash_balance_value:,.2f}"
             
     def get_current_billing_cycle(self) -> tuple[date, date]:
         """Get the start and end dates of the current billing cycle (19th to 18th of next month)."""
