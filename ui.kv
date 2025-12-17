@@ -787,8 +787,6 @@
 			background_normal: ""
 			background_color: 0, 0, 0, 0
 			color: rgba("#86EFACFF")
-			font_name: "data/fonts/DejaVuSans.ttf"
-			text: "✎"
 			font_size: sp(16)
 			bold: True
 			on_release: app.root.get_screen("transactions").edit_transaction(root.transaction_id)
@@ -873,66 +871,301 @@
 		text_size: self.size
 
 <DashboardScreen>:
-	name: "dashboard"
-	BoxLayout:
-		orientation: "horizontal"
-		NavigationDrawer:
-		BoxLayout:
-			orientation: "vertical"
-			canvas.before:
-				Color:
-					rgba: rgba("#0B1020FF")
-				Rectangle: 
-					pos: self.pos
-					size: self.size
-			TopAppBar:
-			ScrollView:
-				do_scroll_x: False
-				GridLayout:
-					cols:1
-					size_hint_y: None
-					height: self.minimum_height
-					padding: dp(24)
-					spacing: dp(24)
-					GridLayout:
-						cols:3
-						size_hint_y: None
-						height: dp(160)
-						spacing: dp(18)
-						MetricCard:
-							metric_title: "Current Balance"
-							metric_value: root.current_balance_text
-							metric_caption: root.balance_caption
-							bg_color: rgba("#1E293BFF")
-						MetricCard:
-							metric_title: "Outstanding Debt"
-							metric_value: root.outstanding_debt_text
-							metric_caption: root.outstanding_debt_caption
-							bg_color: rgba("#7C3AEDFF")
-					BoxLayout:
-						orientation: "horizontal"
-						size_hint_y: None
-						height: dp(64)
-						padding: [20,0,20,0]
-						spacing: dp(16)
-						AnchorLayout:
-							anchor_x: "left"
-							anchor_y: "center"
-							AccentButton:
-								text: "Add expense"
-								background_color: rgba("#EF5250FF")
-								size_hint: None, None
-								size: dp(180), dp(50)
-								on_release: app.root.get_screen("dashboard").open_add_expense()
-						AnchorLayout:
-							anchor_x: "right"
-							anchor_y: "center"
-							AccentButton:
-								text: "Add Income"
-								background_color: rgba("#66BB6AFF")
-								size_hint: None, None
-								size: dp(180), dp(50)
-								on_release: app.root.get_screen("dashboard").open_add_income()						
+    name: "dashboard"
+    
+    BoxLayout:
+        orientation: "horizontal"
+        spacing: 0
+        
+        # Navigation Drawer
+        NavigationDrawer:
+            id: nav_drawer
+            size_hint_x: None
+            width: dp(280)  # Fixed width, will be adjusted in Python code
+            
+        # Main Content Area
+        BoxLayout:
+            orientation: "vertical"
+            spacing: 0
+            padding: [dp(8), 0, dp(8), 0]  # Add some horizontal padding
+            
+            # Top App Bar
+            BoxLayout:
+                size_hint_y: None
+                height: dp(64)
+                padding: [dp(16), 0, dp(16), 0]
+                canvas.before:
+                    Color:
+                        rgba: rgba("#0F172AFF")  # Dark blue-gray
+                    Rectangle:
+                        pos: self.pos
+                        size: self.size
+                
+                Label:
+                    text: "Dashboard"
+                    font_size: sp(20)
+                    bold: True
+                    color: rgba("#F8FAFCFF")
+                    halign: "left"
+                    valign: "middle"
+                    text_size: self.size
+                    padding_x: dp(16)
+                
+                Widget:  # Spacer
+                    size_hint_x: 0.6
+                
+                # Date/Time Display
+                Label:
+                    text: root.current_date
+                    font_size: sp(14)
+                    color: rgba("#94A3B8FF")
+                    halign: "right"
+                    valign: "middle"
+                    text_size: self.size
+                    padding_x: dp(16)
+            
+            # Main Scrollable Content
+            ScrollView:
+                do_scroll_x: False
+                effect_cls: "ScrollEffect"
+                bar_width: dp(6)
+                bar_color: rgba("#3B82F666")
+                bar_inactive_color: rgba("#3B82F633")
+                
+                BoxLayout:
+                    orientation: "vertical"
+                    padding: [dp(24), dp(16), dp(24), dp(32)]
+                    spacing: dp(24)
+                    size_hint_y: None
+                    height: self.minimum_height
+                    
+                    # Top Metrics Row
+                    BoxLayout:
+                        id: metrics_row
+                        orientation: 'horizontal'
+                        size_hint_y: None
+                        height: dp(140)
+                        spacing: dp(8)
+                        padding: [dp(8), 0, dp(8), 0]
+                        
+                        # Balance Card
+                        BoxLayout:
+                            orientation: "vertical"
+                            padding: [dp(16), dp(16)]
+                            spacing: dp(8)
+                            size_hint_x: 0.33
+                            size_hint_y: None
+                            height: dp(140)
+                            canvas.before:
+                                Color:
+                                    rgba: rgba("#1E293BFF")
+                                RoundedRectangle:
+                                    pos: self.pos
+                                    size: self.size
+                                    radius: [16, 16, 16, 16]
+                            
+                            Label:
+                                text: "Current Balance"
+                                font_size: sp(14)
+                                color: rgba("#94A3B8FF")
+                                size_hint_y: None
+                                height: self.texture_size[1]
+                                halign: "left"
+                                text_size: self.size
+                            
+                            Label:
+                                text: root.current_balance_text
+                                font_size: sp(32)
+                                color: rgba("#F8FAFCFF")
+                                size_hint_y: None
+                                height: self.texture_size[1]
+                                halign: "left"
+                                text_size: self.size
+                                bold: True
+                            
+                            Label:
+                                text: root.balance_caption
+                                font_size: sp(12)
+                                color: rgba("#94A3B8FF")
+                                size_hint_y: None
+                                height: self.texture_size[1]
+                                halign: "left"
+                                text_size: self.size
+                        
+                        # Debt Card
+                        BoxLayout:
+                            orientation: "vertical"
+                            padding: [dp(24), dp(20)]
+                            spacing: dp(8)
+                            canvas.before:
+                                Color:
+                                    rgba: rgba("#7C3AEDFF")
+                                RoundedRectangle:
+                                    pos: self.pos
+                                    size: self.size
+                                    radius: [16, 16, 16, 16]
+                            
+                            Label:
+                                text: "Outstanding Debt"
+                                font_size: sp(14)
+                                color: rgba("#F0E7FEFF")
+                                size_hint_y: None
+                                height: self.texture_size[1]
+                                halign: "left"
+                                text_size: self.size
+                            
+                            Label:
+                                text: root.outstanding_debt_text
+                                font_size: sp(32)
+                                color: rgba("#F8FAFCFF")
+                                size_hint_y: None
+                                height: self.texture_size[1]
+                                halign: "left"
+                                text_size: self.size
+                                bold: True
+                            
+                            Label:
+                                text: root.outstanding_debt_caption
+                                font_size: sp(12)
+                                color: rgba("#F0E7FEFF")
+                                size_hint_y: None
+                                height: self.texture_size[1]
+                                halign: "left"
+                                text_size: self.size
+                        
+                        # Credit Card Debt Card
+                        BoxLayout:
+                            orientation: "vertical"
+                            padding: [dp(24), dp(20)]
+                            spacing: dp(8)
+                            canvas.before:
+                                Color:
+                                    rgba: rgba("#EF4444FF")
+                                RoundedRectangle:
+                                    pos: self.pos
+                                    size: self.size
+                                    radius: [16, 16, 16, 16]
+                            
+                            Label:
+                                text: "Credit Card Debt"
+                                font_size: sp(14)
+                                color: rgba("#FEE2E2FF")
+                                size_hint_y: None
+                                height: self.texture_size[1]
+                                halign: "left"
+                                text_size: self.size
+                            
+                            Label:
+                                text: root.credit_card_debt_text
+                                font_size: sp(28)
+                                color: rgba("#F8FAFCFF")
+                                size_hint_y: None
+                                height: self.texture_size[1]
+                                halign: "left"
+                                text_size: self.size
+                                bold: True
+                            
+                            Label:
+                                text: root.credit_card_debt_caption
+                                font_size: sp(12)
+                                color: rgba("#FEE2E2FF")
+                                size_hint_y: None
+                                height: self.texture_size[1]
+                                halign: "left"
+                                text_size: self.size
+                    
+                    # Quick Actions Row
+                    BoxLayout:
+                        id: quick_actions
+                        orientation: 'horizontal'
+                        size_hint_y: None
+                        height: dp(80)
+                        spacing: dp(16)
+                        padding: [dp(8), 0, dp(8), 0]
+                        
+                        # Add Expense Button
+                        Button:
+                            id: add_expense_btn
+                            text: "Add Expense"
+                            size_hint_x: 1
+                            size_hint_y: None
+                            height: dp(60)
+                            background_normal: ""
+                            background_color: rgba("#EF4444FF")
+                            color: rgba("#FFFFFFFF")
+                            font_size: sp(16)
+                            bold: True
+                            on_release: app.root.get_screen("dashboard").open_add_expense()
+                            canvas.before:
+                                Color:
+                                    rgba: (1, 1, 1, 0.1) if self.state == 'down' else (0, 0, 0, 0)
+                                RoundedRectangle:
+                                    pos: self.pos
+                                    size: self.size
+                                    radius: [12, 12, 12, 12]
+                            
+                            BoxLayout:
+                                orientation: "horizontal"
+                                spacing: dp(8)
+                                padding: [dp(16), 0]
+                                
+                                Label:
+                                    text: "+ Expense"
+                                    font_size: sp(16)
+                                    color: rgba("#FFFFFFFF")
+                                    bold: True
+                                    size_hint_x: None
+                                    width: self.texture_size[0]
+                                
+                                Label:
+                                    text: "+"
+                                    font_size: sp(20)
+                                    color: rgba("#FFFFFFFF")
+                                    bold: True
+                                    size_hint: None, None
+                                    size: dp(24), dp(24)
+                        
+                        # Add Income Button
+                        Button:
+                            id: add_income_btn
+                            text: "Add Income"
+                            size_hint_x: 1
+                            size_hint_y: None
+                            height: dp(60)
+                            background_normal: ""
+                            background_color: rgba("#10B981FF")
+                            color: rgba("#FFFFFFFF")
+                            font_size: sp(16)
+                            bold: True
+                            on_release: app.root.get_screen("dashboard").open_add_income()
+                            canvas.before:
+                                Color:
+                                    rgba: (1, 1, 1, 0.1) if self.state == 'down' else (0, 0, 0, 0)
+                                RoundedRectangle:
+                                    pos: self.pos
+                                    size: self.size
+                                    radius: [12, 12, 12, 12]
+                            
+                            BoxLayout:
+                                orientation: "horizontal"
+                                spacing: dp(8)
+                                padding: [dp(16), 0]
+                                
+                                Label:
+                                    text: "+ Income"
+                                    font_size: sp(16)
+                                    color: rgba("#FFFFFFFF")
+                                    bold: True
+                                    size_hint_x: None
+                                    width: self.texture_size[0]
+                                
+                                Label:
+                                    text: "+"
+                                    font_size: sp(20)
+                                    color: rgba("#FFFFFFFF")
+                                    bold: True
+                                    size_hint: None, None
+                                    size: dp(24), dp(24)	
 
 
 <CategoryTotalsScreen>:
@@ -1065,7 +1298,6 @@
 				size_hint:	None, None
 				size: dp(44), dp(44)
 				text: "<-"
-				font_name: "DejaVuSans.ttf"
 				font_size: sp(20)
 				background_normal: ""
 				background_color: 0,0,0,0
@@ -1182,7 +1414,6 @@
                 size_hint: None, None
                 size: dp(44), dp(44)
                 text: "<-"
-                font_name: "DejaVuSans.ttf"
                 font_size: sp(20)
                 background_normal: ""
                 background_color: 0,0,0,0
@@ -1293,7 +1524,6 @@
 			size_hint: None, None
 			size: dp(44), dp(44)
 			text: "<-"
-			font_name: "DejaVuSans.ttf"
 			font_size: sp(20)
 			background_normal: ""
 			background_color: 0,0,0,0
@@ -1395,7 +1625,6 @@
 				size_hint:	None, None
 				size: dp(44), dp(44)
 				text: "<-"
-				font_name: "DejaVuSans.ttf"
 				font_size: sp(20)
 				background_normal: ""
 				background_color: 0,0,0,0

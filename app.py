@@ -11,10 +11,33 @@ from kivy.lang import Builder
 from kivy.metrics import dp
 from kivy.properties import StringProperty, ObjectProperty, BooleanProperty, ListProperty, DictProperty, NumericProperty
 from kivy.clock import Clock
+from kivy.core.window import Window
 from kivy.uix.modalview import ModalView
 from kivy.uix.dropdown import DropDown
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.factory import Factory
+
+from kivy.config import Config
+from kivy.metrics import dp
+
+# Configure window settings
+Config.set('graphics', 'resizable', '1')
+Config.set('graphics', 'borderless', '0')
+
+# Set a reasonable default size
+Window.size = (dp(1280), dp(800))
+
+# Set minimum window size to ensure usability
+Window.minimum_width = dp(320)
+Window.minimum_height = dp(600)
+
+# Function to handle window resize
+def on_window_size(window, width, height):
+    # You can add any responsive behavior here if needed
+    pass
+
+# Bind the resize event
+Window.bind(on_resize=on_window_size)
 
 # ------------------------------------------------------------------ #
 # Storage & Logic
@@ -276,7 +299,6 @@ class AddIncomeDialog(ModalView):
 
 
 class DashboardScreen(Screen):
-   
     current_balance_text = StringProperty("0.00")
     balance_caption = StringProperty("")
     outstanding_debt_text = StringProperty("0.00")
@@ -286,12 +308,69 @@ class DashboardScreen(Screen):
     borrowed_debt_text = StringProperty("0.00")
     borrowed_debt_caption = StringProperty("")
     current_billing_cycle = StringProperty("")
+    current_date = StringProperty("")
 
-    def on_pre_enter(self, *_) -> None:
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
+        self._keyboard.bind(on_key_down=self._on_keyboard_down)
+        Window.bind(on_resize=self._on_window_resize)
+
+    def on_pre_enter(self, *args):
+        self.current_date = date.today().strftime("%A, %B %d, %Y")
         self.refresh_metrics()
+        self._update_layout()
 
-    def on_kv_post(self, base_widget) -> None:
-        Clock.schedule_once(lambda *_:self.refresh_metrics(),0)
+    def on_kv_post(self, base_widget):
+        self.refresh_metrics()
+        self._update_layout()
+
+    def _on_window_resize(self, window, width, height):
+        self._update_layout()
+
+    def _update_layout(self):
+        # Update layout based on window size
+        if not hasattr(self, 'ids'):
+            return
+            
+        window_width = Window.width
+        
+        # Update navigation drawer width (25% of window width, min 240, max 320)
+        if 'nav_drawer' in self.ids:
+            nav_width = max(dp(240), min(dp(320), window_width * 0.25))
+            self.ids.nav_drawer.width = nav_width
+        
+        # Update metrics row
+        if 'metrics_row' in self.ids:
+            metrics_row = self.ids.metrics_row
+            if window_width < 900:
+                metrics_row.orientation = 'vertical'
+                metrics_row.height = dp(420)
+                for child in metrics_row.children:
+                    child.size_hint_x = 1
+            else:
+                metrics_row.orientation = 'horizontal'
+                metrics_row.height = dp(140)
+                for child in metrics_row.children:
+                    child.size_hint_x = 0.33
+        
+        # Update quick actions
+        if 'quick_actions' in self.ids:
+            quick_actions = self.ids.quick_actions
+            if window_width < 600:
+                quick_actions.orientation = 'vertical'
+                quick_actions.height = dp(160)
+            else:
+                quick_actions.orientation = 'horizontal'
+                quick_actions.height = dp(80)
+
+    def _keyboard_closed(self):
+        self._keyboard.unbind(on_key_down=self._on_keyboard_down)
+        self._keyboard = None
+
+    def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
+        # Handle keyboard events if needed
+        return False
 
     def open_add_expense(self) -> None:
         dialog = AddExpenseDialog()
