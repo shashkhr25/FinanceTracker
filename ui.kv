@@ -269,7 +269,7 @@
 	spacing: dp(16)
 	canvas.before:
 		Color:
-			rgba: rgba("#0B1020FF")
+			rgba: rgba("#F8FAFCFF")
 		Rectangle:
 			pos: self.pos
 			size: self.size
@@ -715,7 +715,7 @@
 	description_text: ""
 	device_text: ""
 	amount_text: ""
-	amount_color: rgba("#86EFACFF")
+	amount_color: rgba("#000000ff")
 	shared_text: ""
 	orientation: "horizontal"
 	size_hint_y: None
@@ -724,7 +724,7 @@
 	spacing: dp(12)
 	canvas.before:
 		Color:
-			rgba: (26/255, 32/255, 45/255, 0.6)
+			rgba: rgba("#dcdcdcff")
 		RoundedRectangle:
 			pos: self.pos
 			size: self.size
@@ -733,14 +733,14 @@
 		text: root.date_text
 		size_hint_x: None
 		width: dp(90)
-		color: rgba("#94A3B8FF")
+		color: rgba("#000306ff")
 		font_size: sp(14)
 	BoxLayout:
 		orientation: "vertical"
 		spacing: dp(2)
 		Label:
 			text: root.category_text
-			color: rgba("#E2E8F0FF")
+			color: rgba("#000306ff")
 			font_size: sp(16)
 			bold: True
 			text_size: self.width, None
@@ -748,7 +748,7 @@
 			valigh: "middle"
 		Label:	
 			text: root.description_text
-			color: rgba("#94A3B8FF")
+			color: rgba("#000306ff")
 			font_size: sp(12)
 			text_size: self.width, None
 			halign: "left"
@@ -759,7 +759,7 @@
 		width: dp(150)
 		Label:
 			text: root.device_text
-			color: rgba("#94A3B8FF")
+			color: rgba("#000306ff")
 			font_size: sp(12)
 		Label:
 			text: root.amount_text
@@ -771,7 +771,7 @@
 			valign: "middle"
 		Label:
 			text: root.shared_text
-			color: rgba("#FACC15FF")
+			color: rgba("#765f04ff")
 			font_size: sp(11)
 			halign: "right"
 			text_size: self.size
@@ -786,9 +786,10 @@
 			size: dp(24), dp(24)
 			background_normal: ""
 			background_color: 0, 0, 0, 0
-			color: rgba("#86EFACFF")
+			color: rgba("#10B981FF")
 			font_size: sp(16)
-			text: "Edit"
+			font_name: "data/fonts/DejaVuSans.ttf"
+			text: "✎"
 			bold: True
 			on_release: app.root.get_screen("transactions").edit_transaction(root.transaction_id)
 		Button:
@@ -796,7 +797,7 @@
 			size: dp(24), dp(24)
 			background_normal: ""
 			background_color: 0, 0, 0, 0
-			color: rgba("#FCA5A5FF")
+			color: rgba("#EF4444FF")
 			text: "-"
 			font_size: sp(16)
 			bold: True
@@ -1237,7 +1238,7 @@
 		orientation: "vertical"
 		canvas.before:
 			Color:
-				rgba: rgba("#0B1020FF")
+				rgba: rgba("#F8FAFCFF")
 			Rectangle:
 				pos: self.pos
 				size: self.size
@@ -1249,15 +1250,15 @@
 				font_size: sp(20)
 				background_normal: ""
 				background_color: 0,0,0,0
-				color: rgba("#E2E8F0FF")
+				color: rgba("#000306ff")
 				on_release: app.root.current = "dashboard"
 			Label:
 				text: "Transactions"
-				color: rgba("#fff1d6")
+				color: rgba("#000306ff")
 				font_size: sp(20)
 				bold: True
 				text_size: self.size
-				halign: "left"
+				halign: "center"
 				valigh: "middle"
 		BoxLayout:
 			orientation: "vertical"
@@ -1272,16 +1273,16 @@
                     text: "Sort: Newest First"
                     size_hint_x: 0.5
                     background_normal: ""
-                    background_color: rgba("#4B5563FF")
-                    color: rgba("#E2E8F0FF")
+                    background_color: rgba("#F8FAFCFF")
+                    color: rgba("#000306ff")
                     on_release: 
                         root.toggle_sort_order()
                         root.update_sort_button_text(self)
 				TextInput:
 					id: filter_text
 					hint_text: "Search description / category / device"
-					background_color: rgba("#1E293BFF")
-					foreground_color: rgba("#E2E8F0FF")
+					background_color: rgba("#F8FAFCFF")
+					foreground_color: rgba("#000306ff")
 					padding: dp(12)
 					radius: [12,12,12,12]
 					multiline: False
@@ -1289,8 +1290,8 @@
 				TextInput:
 					id: filter_category
 					hint_text: "Category"
-					background_color: rgba("#1E293BFF")
-					foreground_color: rgba("#E2E8F0FF")
+					background_color: rgba("#F8FAFCFF")
+					foreground_color: rgba("#000306ff")
 					padding: dp(12)
 					radius: [12,12,12,12]
 					size_hint_x: None
@@ -1300,8 +1301,8 @@
 				TextInput:
 					id: filter_device
 					hint_text: "Device"
-					background_color: rgba("#1E293BFF")
-					foreground_color: rgba("#E2E8F0FF")
+					background_color: rgba("#F8FAFCFF")
+					foreground_color: rgba("#000306ff")
 					padding: dp(12)
 					radius: [12,12,12,12]
 					size_hint_x: None
@@ -1321,7 +1322,7 @@
 				opacity: 0
 				size_hint_y: None
 				height: 0
-				color: rgba("#94A3B8FF")
+				color: rgba("#FFFFFF")
 				font_size: sp(14)
 				halign: "center"
 				valigh: "middle"
@@ -1329,8 +1330,8 @@
 				id: transactions_rv
 				viewclass: "TransactionRow"
 				bar_width: dp(8)
-				bar_color: rgba("#4B5563FF")
-				bar_inactive_color: rgba("#4B556388")
+				bar_color: rgba("#000306ff")
+				bar_inactive_color: rgba("#FFFFFF")
 				bar_margin: dp(2)
 				scroll_type: ['bars', 'content']
 				scroll_wheel_distance: dp(80)

@@ -937,7 +937,7 @@ class TransactionsScreen(Screen):
         data = []
         for tx in transactions:
             sign = "-" if tx.tx_type == "expense" else "+"
-            amount_color = "#FCA5A5FF" if tx.tx_type == "expense" else "#86EFACFF"
+            amount_color = "#EF4444FF" if tx.tx_type == "expense" else "#10B981FF"
             data.append(
                 {
                     "date_text" : tx.date.strftime("%d %b %Y"),
