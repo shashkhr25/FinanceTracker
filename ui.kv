@@ -8,21 +8,21 @@
 	padding: [dp(8), 0]
 	canvas.before:
 		Color:
-			rgba: (26/255, 32/255, 45/255, 0.55)
+			rgba: rgba("#bbbfc2ff")
 		RoundedRectangle:
 			pos: self.pos
 			size: self.size
 			radius: [12,12,12,12]
 	Label:
 		text: root.label_text
-		color: rgba("#E2E8F0FF")
+		color: rgba("#000306ff")
 		font_size: sp(13)
 		bold: True
 		valign: "middle"
 		text_size: self.size
 	Label:
 		text: root.amount_text
-		color: rgba("#86EFACFF")
+		color: rgba("#10B981FF")
 		font_size: sp(13)
 		bold: True
 		valign: "middle"
@@ -1280,7 +1280,7 @@
                     size_hint_x: 0.5
                     background_normal: ""
                     background_color: rgba("#F8FAFCFF")
-                    color: rgba("#000306ff")
+                    color: rgba("#b0bbc7ff")
                     on_release: 
                         root.toggle_sort_order()
                         root.update_sort_button_text(self)
@@ -1956,7 +1956,7 @@
         orientation: "vertical"
         canvas.before:
             Color:
-                rgba: rgba("#0F172AFF")
+                rgba: rgba("#F8FAFCFF")
             Rectangle:
                 pos: self.pos
                 size: self.size
@@ -1975,7 +1975,7 @@
 				font_size: sp(20)
 				background_normal: ""
 				background_color: 0,0,0,0
-				color: rgba("#E2E8F0FF")
+				color: rgba("#000306ff")
 				on_release: app.root.current = "dashboard"
                 canvas.before:
                     Color:
@@ -1987,10 +1987,10 @@
             
             Label:
                 text: "Shared Expenses"
-                color: rgba("#F8FAFCFF")
+                color: rgba("#000306ff")
                 font_size: sp(18)
                 bold: True
-                halign: "left"
+                halign: "center"
                 valign: "middle"
                 text_size: self.size
         
@@ -2016,10 +2016,10 @@
                     
                     BoxLayout:
                         orientation: "vertical"
-                        padding: [dp(16), dp(12)]
+                        padding: [dp(12), dp(12)]
                         canvas.before:
                             Color:
-                                rgba: rgba("#1E293BFF")
+                                rgba: rgba("#bbbfc2ff")
                             RoundedRectangle:
                                 pos: self.pos
                                 size: self.size
@@ -2027,52 +2027,23 @@
                         
                         Label:
                             text: "Total Shared"
-                            color: rgba("#94A3B8FF")
+                            color: rgba("#000306ff")
                             font_size: sp(13)
                             size_hint_y: None
-                            height: dp(20)
-                            halign: "left"
+                            height: dp(12)
+                            halign: "center"
                             text_size: self.size
                         
                         Label:
                             text: root.total_shared_text
-                            color: rgba("#F8FAFCFF")
+                            color: rgba("#000306ff")
                             font_size: sp(20)
                             bold: True
                             size_hint_y: None
                             height: dp(28)
-                            halign: "left"
+                            halign: "center"
                             text_size: self.size
                     
-                    BoxLayout:
-                        orientation: "vertical"
-                        padding: [dp(16), dp(12)]
-                        canvas.before:
-                            Color:
-                                rgba: rgba("#1E293BFF")
-                            RoundedRectangle:
-                                pos: self.pos
-                                size: self.size
-                                radius: [dp(12), dp(12), dp(12), dp(12)]
-                        
-                        Label:
-                            text: root.summary_caption
-                            color: rgba("#94A3B8FF")
-                            font_size: sp(13)
-                            size_hint_y: None
-                            height: dp(20)
-                            halign: "left"
-                            text_size: self.size
-                        
-                        Label:
-                            text: root.detail_caption
-                            color: rgba("#F8FAFCFF")
-                            font_size: sp(20)
-                            bold: True
-                            size_hint_y: None
-                            height: dp(28)
-                            halign: "left"
-                            text_size: self.size
                 
                 # Filter section
                 BoxLayout:
@@ -2082,8 +2053,8 @@
                     height: dp(120)
                     
                     Label:
-                        text: "Filter Transactions"
-                        color: rgba("#F8FAFCFF")
+                        text: "Filter"
+                        color: rgba("#000306ff")
                         font_size: sp(14)
                         bold: True
                         size_hint_y: None
@@ -2101,49 +2072,26 @@
                             id: participant_input
                             hint_text: "Person"
                             hint_text_color: rgba("#64748BFF")
-                            background_color: rgba("#1E293BFF")
-                            foreground_color: rgba("#F8FAFCFF")
+                            background_color: rgba("#F8FAFCFF")
+                            foreground_color: rgba("#000306ff")
                             padding: [dp(12), dp(10)]
                             size_hint_x: 0.5
                             multiline: False
                             on_text_validate: root.handle_filter_change()
                             font_size: sp(14)
-                            canvas.before:
-                                Color:
-                                    rgba: rgba("#1E293BFF")
-                                RoundedRectangle:
-                                    pos: self.pos
-                                    size: self.size
-                                    radius: [dp(8), dp(8), dp(8), dp(8)]
-                                        
-                                Color:
-                                    rgba: rgba("#334155FF")
-                                Line:
-                                    rounded_rectangle: [self.x, self.y, self.width, self.height, 8]
                         
                         TextInput:
                             id: category_input
                             hint_text: "Category"
-                            hint_text_color: rgba("#64748BFF")
-                            background_color: rgba("#1E293BFF")
-                            foreground_color: rgba("#F8FAFCFF")
+                            hint_text_color: rgba("#000306ff")
+                            background_color: rgba("#F8FAFCFF")
+                            foreground_color: rgba("#000306ff")
                             padding: [dp(12), dp(10)]
                             size_hint_x: 0.5
                             multiline: False
                             on_text_validate: root.handle_filter_change()
                             font_size: sp(14)
-                            canvas.before:
-                                Color:
-                                    rgba: rgba("#1E293BFF")
-                                RoundedRectangle:
-                                    pos: self.pos
-                                    size: self.size
-                                    radius: [dp(8), dp(8), dp(8), dp(8)]
                                         
-                                Color:
-                                    rgba: rgba("#334155FF")
-                                Line:
-                                    rounded_rectangle: [self.x, self.y, self.width, self.height, 8]
                     
                     BoxLayout:
                         orientation: "horizontal"
@@ -2154,8 +2102,8 @@
                         Button:
                             text: "Clear"
                             size_hint_x: 0.5
-                            background_color: rgba("#1E293BFF")
-                            color: rgba("#94A3B8FF")
+                            background_color: rgba("#F8FAFCFF")
+                            color: rgba("#000306ff")
                             font_size: sp(14)
                             on_release: root.clear_filters()
                             canvas.before:
@@ -2190,7 +2138,7 @@
                     
                     Label:
                         text: "Per-person Summary"
-                        color: rgba("#F8FAFCFF")
+                        color: rgba("#000306ff")
                         font_size: sp(14)
                         bold: True
                         size_hint_y: None
@@ -2202,7 +2150,7 @@
                         orientation: "vertical"
                         canvas.before:
                             Color:
-                                rgba: rgba("#1E293BFF")
+                                rgba: rgba("#bbbfc2ff")
                             RoundedRectangle:
                                 pos: self.pos
                                 size: self.size
@@ -2222,48 +2170,7 @@
                                 height: self.minimum_height
                                 orientation: "vertical"
                                 spacing: 0
-                
-                # Transaction details section
-                BoxLayout:
-                    orientation: "vertical"
-                    spacing: dp(8)
-                    size_hint_y: None
-                    height: max(dp(300), self.minimum_height)
-                    
-                    Label:
-                        text: "Transaction Details"
-                        color: rgba("#F8FAFCFF")
-                        font_size: sp(14)
-                        bold: True
-                        size_hint_y: None
-                        height: dp(20)
-                        halign: "left"
-                        text_size: self.size
-                    
-                    BoxLayout:
-                        orientation: "vertical"
-                        canvas.before:
-                            Color:
-                                rgba: rgba("#1E293BFF")
-                            RoundedRectangle:
-                                pos: self.pos
-                                size: self.size
-                                radius: [dp(12), dp(12), dp(12), dp(12)]
-                        
-                        RecycleView:
-                            viewclass: "SharedDetailRow"
-                            data: root.detail_data
-                            bar_width: dp(4)
-                            bar_color: rgba("#3B82F6FF")
-                            scroll_wheel_distance: dp(80)
-                            
-                            RecycleBoxLayout:
-                                default_size: None, dp(88)
-                                default_size_hint: 1, None
-                                size_hint_y: None
-                                height: self.minimum_height
-                                orientation: "vertical"
-                                spacing: 0
+               
 
 <SharedDetailRow@BoxLayout>:
     date_text: ""
