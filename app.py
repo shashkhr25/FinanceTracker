@@ -1,21 +1,51 @@
-"""MoneyTracker – Final, Working, Modern UI"""
+"""MoneyTracker – Final, Working, Modern UI with User Management"""
 
 import csv
 import os
 from datetime import date, datetime, timedelta
 from pathlib import Path
-from typing import Dict, List, Sequence
+from typing import Dict, List, Sequence, Optional
 from kivymd.app import MDApp
-from kivy.core.window import Window
+from kivy.uix.screenmanager import ScreenManager, Screen, NoTransition
 from kivy.lang import Builder
-from kivy.metrics import dp
-from kivy.properties import StringProperty, ObjectProperty, BooleanProperty, ListProperty, DictProperty, NumericProperty
+from kivy.core.window import Window
+from kivy.properties import (
+    StringProperty,
+    ObjectProperty,
+    ListProperty,
+    BooleanProperty,
+    DictProperty,
+)
 from kivy.clock import Clock
+from kivy.metrics import dp
 from kivy.uix.modalview import ModalView
+from kivy.uix.spinner import Spinner
 from kivy.uix.dropdown import DropDown
-from kivy.uix.screenmanager import ScreenManager, Screen
+from kivy.uix.checkbox import CheckBox
+from kivy.uix.popup import Popup
+from kivy.uix.label import Label
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.gridlayout import GridLayout
+from kivy.uix.scrollview import ScrollView
 from kivy.factory import Factory
 from kivy.config import Config
+from kivymd.app import MDApp
+from kivymd.uix.button import MDFlatButton, MDRaisedButton
+from kivymd.uix.dialog import MDDialog
+from kivymd.uix.pickers.datepicker import MDDatePicker
+from kivymd.uix.textfield import MDTextField
+from kivymd.uix.menu import MDDropdownMenu
+from kivymd.theming import ThemableBehavior
+from kivymd.uix.list import OneLineIconListItem, MDList
+
+# Import user management
+from user_manager import UserManager
+user_manager = UserManager()
+
+# Import and register UserScreen
+from screens.user_screen import UserScreen
+from kivy.factory import Factory
+Factory.register('UserScreen', cls=UserScreen)
 
 # Configure window settings
 Config.set('graphics', 'resizable', '1')
@@ -47,7 +77,9 @@ from storage import (
     read_transactions, 
     write_settings, 
     start_new_month_transactionfile,
-    CSV_COLUMNS
+    CSV_COLUMNS,
+    get_transactions_path,
+    get_settings_path
 )
 from logic import (
     Transaction,
@@ -1633,18 +1665,59 @@ class SettingsScreen(Screen):
         start_new_month_transactionfile()
 
 class MoneyTrackerScreenManager(ScreenManager):
-        """ commenting block
-        new line of comments
-        """
+    """Main screen manager for the application with user session handling."""
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.transition = NoTransition()  # Disable screen transitions initially
+        self._initial_screen_set = False
+        
+    def on_kv_post(self, base_widget):
+        # This runs after the KV file is loaded
+        super().on_kv_post(base_widget)
+        self.set_initial_screen()
+    
+    def on_screens(self, instance, value):
+        # This runs whenever screens are added or removed
+        if not self._initial_screen_set:
+            self.set_initial_screen()
+    
+    def set_initial_screen(self):
+        if not self.screens:
+            return
+            
+        # Check if we have a current user
+        current_user = user_manager.get_current_user()
+        if current_user and 'dashboard' in self.screen_names:
+            # User is logged in, go to dashboard
+            self.current = "dashboard"
+            self._initial_screen_set = True
+        elif 'user' in self.screen_names:
+            # No user logged in, go to user screen
+            self.current = "user"
+            self._initial_screen_set = True
+    
+    def logout(self):
+        """Log out the current user and return to the user selection screen."""
+        user_manager.set_current_user(None)  # Logout
+        self.transition = NoTransition()
+        self.current = "user"  # Switch to user selection screen
+        
+        # Clear any sensitive data from screens
+        for screen in self.screens:
+            if hasattr(screen, 'on_logout'):
+                screen.on_logout()
 
 
 class MoneyTrackerApp(MDApp):
+    """Main application class with user management integration."""
     config_state = DictProperty({})
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.theme_cls.theme_style = "Light"  # or "Dark"
         self.theme_cls.primary_palette = "Blue"  # You can change the color
+        self.user_manager = user_manager  # Make user_manager available app-wide
         
     def build(self) -> ScreenManager:
         # Set window properties
@@ -1661,22 +1734,64 @@ class MoneyTrackerApp(MDApp):
         Window.left = max(0, (screen_width - window_width) / 2)
         Window.top = max(0, (screen_height - window_height) / 2)
         
-        ensure_data_dir()
+        # Ensure users directory exists
+        (Path("data") / "users").mkdir(parents=True, exist_ok=True)
         
-        # Load the KV file
-        if KV_FILE.exists():
-            return Builder.load_file(str(KV_FILE))
-        return Builder.load_string("\n".join(self._fallback_kv()))
+        # Create screen manager first
+        sm = MoneyTrackerScreenManager()
+        
+        # Add user screen first (imported here to avoid circular imports)
+        from screens.user_screen import UserScreen
+        sm.add_widget(UserScreen(name='user'))
+        
+        # Load KV file after adding the user screen
+        Builder.load_file(str(KV_FILE))
+        
+        # Add other screens
+        sm.add_widget(DashboardScreen(name='dashboard'))
+        sm.add_widget(TransactionsScreen(name='transactions'))
+        sm.add_widget(NetWorthScreen(name='networth'))
+        sm.add_widget(CategoryTotalsScreen(name='category_totals'))
+        sm.add_widget(SharedExpensesScreen(name='shared'))
+        sm.add_widget(SettingsScreen(name='settings'))
+        
+        return sm
 
     def on_start(self) -> None:
-        """ commenting block
-        new line of comments
-        """
+        """Initialize the application and check for new month when a user is logged in."""
+        # If we have a logged-in user, refresh the dashboard
+        if user_manager.current_user:
+            dashboard = self.root.get_screen('dashboard')
+            if hasattr(dashboard, 'refresh_metrics'):
+                dashboard.refresh_metrics()
+            
+            # Check if we need to start a new month's transaction file
+            try:
+                settings = read_settings()
+                last_month = settings.get('last_month_processed')
+                current_month = date.today().strftime('%Y-%m')
+                
+                if last_month != current_month:
+                    # It's a new month, archive last month's transactions
+                    start_new_month_transactionfile()
+                    
+                    # Update the last processed month
+                    settings['last_month_processed'] = current_month
+                    write_settings(settings)
+                    
+                    # Show a notification
+                    if 'dashboard' in self.root.screen_names:
+                        dashboard = self.root.get_screen('dashboard')
+                        if hasattr(dashboard, 'show_popup'):
+                            dashboard.show_popup("New Month", "A new transaction file has been created for this month.")
+            except Exception as e:
+                print(f"Error in on_start: {e}")
 
     def on_stop(self) -> None:
-             """ commenting block
-        new line of comments
-        """
+        """Clean up when the application is closed."""
+        # Save any pending changes
+        # Note: User session is maintained through the users.json file
+        pass
 
     @staticmethod
     def _fallback_kv() -> list[str]:

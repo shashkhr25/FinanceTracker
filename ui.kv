@@ -1454,28 +1454,105 @@
                         metric_caption: "Gold investments"
                         bg_color: rgba("#1E293BFF")
 
+<UserScreen>:
+    name: "user"
+    
+    BoxLayout:
+        orientation: "vertical"
+        padding: [dp(32), dp(64), dp(32), dp(32)]
+        spacing: dp(24)
+        canvas.before:
+            Color:
+                rgba: rgba("#0B1020FF")
+            Rectangle:
+                pos: self.pos
+                size: self.size
+        
+        # Title
+        Label:
+            text: "Welcome to FinanceTracker"
+            font_size: sp(32)
+            color: rgba("#E2E8F0FF")
+            size_hint_y: None
+            height: self.texture_size[1]
+            bold: True
+            halign: "center"
+            text_size: self.width, None
+        
+        # Subtitle
+        Label:
+            text: "Select or create a user to continue"
+            font_size: sp(16)
+            color: rgba("#94A3B8FF")
+            size_hint_y: None
+            height: self.texture_size[1]
+            halign: "center"
+            text_size: self.width, None
+        
+        # User list
+        ScrollView:
+            size_hint_y: 0.6
+            do_scroll_x: False
+            bar_width: dp(4)
+            bar_color: rgba("#3B82F6FF")
+            
+            GridLayout:
+                id: user_list
+                cols: 1
+                spacing: dp(12)
+                size_hint_y: None
+                height: self.minimum_height
+                padding: [dp(8), dp(8)]
+        
+        # New user input
+        TextInput:
+            id: new_user_input
+            hint_text: "Enter new username"
+            size_hint_y: None
+            height: dp(50)
+            background_color: rgba("#1E293BFF")
+            foreground_color: rgba("#E2E8F0FF")
+            cursor_color: rgba("#38BDF8FF")
+            padding: [dp(16), dp(12)]
+            multiline: False
+            on_text_validate: root.add_user()
+        
+        # Buttons
+        BoxLayout:
+            orientation: "horizontal"
+            size_hint_y: None
+            height: dp(50)
+            spacing: dp(12)
+            
+            Button:
+                text: "Create User"
+                background_color: rgba("#3B82F6FF")
+                color: rgba("#FFFFFF")
+                bold: True
+                on_release: root.add_user()
+
 <SettingsScreen>:
-	name: "settings"
-	initial_balance_input: initial_balance_input
-	initial_cash_input: initial_cash_input
-	BoxLayout:
-		orientation: "vertical"
-		canvas.before:
-			Color:
-				rgba: rgba("#0B1020FF")
-			Rectangle:
-				pos: self.pos
-				size: self.size
-		TopAppBar:
-		Button:
-			size_hint: None, None
-			size: dp(44), dp(44)
-			text: "<-"
-			font_size: sp(20)
-			background_normal: ""
-			background_color: 0,0,0,0
-			color: rgba("#E2E8F0FF")
-			on_release: app.root.current = "dashboard"
+    name: "settings"
+    initial_balance_input: initial_balance_input
+    initial_cash_input: initial_cash_input
+    BoxLayout:
+        orientation: "vertical"
+        canvas.before:
+            Color:
+                rgba: rgba("#0B1020FF")
+            Rectangle:
+                pos: self.pos
+                size: self.size
+        TopAppBar:
+        Button:
+            size_hint: None, None
+            size: dp(44), dp(44)
+            text: "<-"
+            font_size: sp(20)
+            background_normal: ""
+            background_color: 0,0,0,0
+            color: rgba("#E2E8F0FF")
+            on_release: app.root.current = "dashboard"
 		ScrollView:
 			do_scroll_x: False
 			GridLayout:
@@ -1543,7 +1620,14 @@
 				background_color: rgba("#60A5FAFF")
 				color: rgba("#0F172AFF")
 				on_release: root.open_initial_savings_dialog()
-		
+			Button:
+				text: "Switch User"
+				size_hint_y: None
+				height: dp(44)
+				background_normal: ""
+				background_color: rgba("#F59E0BFF")
+				color: rgba("#0F172AFF")
+				on_release: app.root.logout()
 
 <SharedExpensesScreen>:
     name: "shared_expenses"
