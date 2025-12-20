@@ -117,6 +117,8 @@ CREDIT_CARD_PAYMENT_CATEGORY_KEYS = ["CREDIT_CARD_PAYMENT"]
 KV_FILE = Path(__file__).with_name("ui.kv")
 
 
+
+
 def _parse_date_or_today(raw: str | None) -> date:
     text = (raw or "").strip()
     if not text:
@@ -1376,6 +1378,7 @@ class NetWorthScreen(Screen):
 
 class CategoryTotalsScreen(Screen):
     category_summary = ListProperty([])
+    total_spending = StringProperty("₹0.00")
     filter_text_input = ObjectProperty(None)
     filter_month_input = ObjectProperty(None)
     filter_year_input = ObjectProperty(None)
@@ -1413,6 +1416,11 @@ class CategoryTotalsScreen(Screen):
                 continue
 
         category_totals = summarize_by_category(transactions)
+        
+        # Calculate total spending across all categories
+        total = sum(category_totals.values())
+        self.total_spending = f"₹{total:,.2f}"
+        
         formatted = []
         for category,totals in sorted(category_totals.items(),key=lambda item : item[0].lower()):
             # Apply text filter

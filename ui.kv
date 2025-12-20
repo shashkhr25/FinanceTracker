@@ -1125,29 +1125,60 @@
 <CategoryTotalsScreen>:
 	name: "category_totals"
 	category_summary: []
+	total_spending: "₹0.00"
 	filter_text_input: filter_text
 	filter_month_input: filter_month
 	filter_year_input: filter_year
+	
 	BoxLayout:
 		orientation: "horizontal"
+		spacing: 0
+		
+		# Navigation Drawer
 		NavigationDrawer:
+			id: nav_drawer
+			size_hint_x: None
+			width: dp(280)
+		
+		# Main Content
 		BoxLayout:
 			orientation: "vertical"
-			canvas.before:
-				Color:
-					rgba: rgba("#F8FAFCFF")
-				Rectangle:
-					pos: self.pos
-					size: self.size
-			TopAppBar:
+			spacing: 0
+			
+			# Top Bar with Title
+			BoxLayout:
+				size_hint_y: None
+				height: dp(56)
+				padding: [dp(16), 0, dp(16), 0]
+				canvas.before:
+					Color:
+						rgba: rgba("#F8FAFCFF")
+					Rectangle:
+						pos: self.pos
+						size: self.size
+				
 				Label:
 					text: "Category Totals"
 					color: rgba("#000306ff")
 					font_size: sp(20)
 					bold: True
+					size_hint_x: 1.0
 					text_size: self.size
 					halign: "center"
-					valigh: "middle"
+					valign: "middle"
+				Label:
+					text: root.total_spending
+					color: rgba("#000306ff")
+					font_size: sp(20)
+					bold: True
+					size_hint_x: 1.0
+					text_size: self.size
+					halign: "center"
+					valign: "middle"
+					
+						
+					
+			# Filters Section
 			BoxLayout:
 				orientation: "vertical"
 				padding: [dp(16), dp(8), dp(16), dp(8)]
