@@ -1271,6 +1271,8 @@
 	filter_text_input: filter_text
 	filter_device_input: filter_device
 	filter_category_input: filter_category
+	filter_month_input: filter_month
+	filter_year_input: filter_year
 	BoxLayout:
 		orientation: "vertical"
 		canvas.before:
@@ -1345,6 +1347,32 @@
 					size_hint_x: None
 					width: dp(110)
 					multiline: False
+					on_text_validate: root.refresh()
+				TextInput:
+					id: filter_month
+					hint_text: "MM"
+					background_color: rgba("#F8FAFCFF")
+					foreground_color: rgba("#000306ff")
+					padding: dp(12)
+					radius: [12,12,12,12]
+					size_hint_x: None
+					width: dp(60)
+					multiline: False
+					input_filter: "int"
+					max_text_length: 2
+					on_text_validate: root.refresh()
+				TextInput:
+					id: filter_year
+					hint_text: "YYYY"
+					background_color: rgba("#F8FAFCFF")
+					foreground_color: rgba("#000306ff")
+					padding: dp(12)
+					radius: [12,12,12,12]
+					size_hint_x: None
+					width: dp(80)
+					multiline: False
+					input_filter: "int"
+					max_text_length: 4
 					on_text_validate: root.refresh()
 				Button:
 					text: "Clear"

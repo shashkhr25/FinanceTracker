@@ -889,9 +889,20 @@ class TransactionsScreen(Screen):
     filter_text_input = ObjectProperty(None)
     filter_device_input = ObjectProperty(None)
     filter_category_input = ObjectProperty(None)
+    filter_month_input = ObjectProperty(None)
+    filter_year_input = ObjectProperty(None)
     sort_ascending = BooleanProperty(False)
 
+    def initialize_filters(self) -> None:
+        """Initialize month and year filters to current month/year"""
+        current_date = date.today()
+        if self.filter_month_input and not self.filter_month_input.text:
+            self.filter_month_input.text = str(current_date.month)
+        if self.filter_year_input and not self.filter_year_input.text:
+            self.filter_year_input.text = str(current_date.year)
+            
     def on_pre_enter(self, *_) -> None:
+        self.initialize_filters()  # This line was missing
         self.refresh()
 
     def toggle_sort_order(self) -> None:
@@ -907,6 +918,20 @@ class TransactionsScreen(Screen):
         ensure_data_dir()
         rows = read_transactions()
         transactions = [transaction_from_row(row) for row in rows]
+        
+        # Apply month and year filters
+        current_date = date.today()
+        month_filter = (self.filter_month_input.text or "").strip() if self.filter_month_input else str(current_date.month)
+        year_filter = (self.filter_year_input.text or "").strip() if self.filter_year_input else str(current_date.year)
+        
+        if month_filter.isdigit() and year_filter.isdigit():
+            target_month = int(month_filter)
+            target_year = int(year_filter)
+            transactions = [
+                tx for tx in transactions 
+                if tx.date.month == target_month and tx.date.year == target_year
+            ]
+        
         # Sort by transaction date with order based on sort_ascending
         transactions.sort(key=lambda tx: tx.date, reverse=not self.sort_ascending)
 
@@ -970,6 +995,12 @@ class TransactionsScreen(Screen):
             self.filter_device_input.text = ""
         if self.filter_category_input:
             self.filter_category_input.text = ""
+        # Reset month and year to current
+        current_date = date.today()
+        if self.filter_month_input:
+            self.filter_month_input.text = str(current_date.month)
+        if self.filter_year_input:
+            self.filter_year_input.text = str(current_date.year)
         self.refresh()
 
     @staticmethod
