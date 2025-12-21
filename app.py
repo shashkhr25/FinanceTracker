@@ -1413,6 +1413,7 @@ class CategoryTotalsScreen(Screen):
     filter_text_input = ObjectProperty(None)
     filter_month_input = ObjectProperty(None)
     filter_year_input = ObjectProperty(None)
+    show_income = BooleanProperty(False)  # Tracks if we're showing income (True) or expenses (False)
 
     def on_pre_enter(self, *_) -> None:
         self.initialize_filters()
@@ -1438,45 +1439,61 @@ class CategoryTotalsScreen(Screen):
         text_filter = (self.filter_text_input.text or "").strip().lower() if self.filter_text_input else ""
 
         settings = read_settings()
-        budget_raw = settings.get("category_budgets",{}) if isinstance(settings,dict) else {}
-        budgets : Dict[str,float] = {}
+        budget_raw = settings.get("category_budgets", {}) if isinstance(settings, dict) else {}
+        budgets: Dict[str, float] = {}
         for name, value in budget_raw.items():
             try:
                 budgets[name] = float(value)
-            except(TypeError,ValueError):
+            except (TypeError, ValueError):
                 continue
 
-        category_totals = summarize_by_category(transactions)
+        # Filter transactions based on whether we're showing income or expenses
+        tx_type = "income" if self.show_income else "expense"
+        filtered_transactions = [tx for tx in transactions if tx.tx_type == tx_type]
         
-        # Calculate total spending across all categories
+        # Get category totals for the selected transaction type
+        category_totals = {}
+        for tx in filtered_transactions:
+            category = tx.category or "Uncategorized"
+            category_totals[category] = category_totals.get(category, 0.0) + tx.amount
+        
+        # Calculate total for the selected transaction type
         total = sum(category_totals.values())
-        self.total_spending = f"₹{total:,.2f}"
+        self.total_spending = f"₹{abs(total):,.2f}"  # Show absolute value for both income and expenses
         
         formatted = []
-        for category,totals in sorted(category_totals.items(),key=lambda item : item[0].lower()):
+        for category, totals in sorted(category_totals.items(), key=lambda item: item[0].lower()):
             # Apply text filter
             if text_filter and text_filter not in category.lower():
                 continue
                 
-            budget =  budgets.get(category,0.0)
-            if budget > 0:
-                variance = budget - totals
-                variance_text = f"{variance:,.2f}"
-                variance_color = "#10B981FF" if variance >=0 else "#EF4444FF"
-                budget_text = f"{budget:,.2f}"
+            # Only show budget for expenses
+            if not self.show_income:
+                budget = budgets.get(category, 0.0)
+                if budget > 0:
+                    variance = budget - abs(totals)  # Use absolute value for comparison
+                    variance_text = f"{variance:,.2f}"
+                    variance_color = "#10B981FF" if variance >= 0 else "#EF4444FF"
+                    budget_text = f"{budget:,.2f}"
+                else:
+                    variance_text = "-"
+                    variance_color = "#94A3B8FF"
+                    budget_text = ""
             else:
-                variance_text = "-"
-                variance_color = "#94A3B8FF" 
+                # For income, we don't show budget/variance
                 budget_text = ""
+                variance_text = "-"
+                variance_color = "#94A3B8FF"
+                
             formatted.append(
                 {
-                    "category_text":category,
-                    "amount_text": f"{totals:,.2f}",
-                    "amount_color": "#000306ff",
+                    "category_text": category,
+                    "amount_text": f"{abs(totals):,.2f}",  # Show absolute value
+                    "amount_color": "#10B981FF" if self.show_income else "#000306ff",
                     "budget_text": budget_text,
-                    "variance_text":variance_text,
-                    "variance_color":variance_color,
-                    "screen_name":"category_totals"
+                    "variance_text": variance_text,
+                    "variance_color": variance_color,
+                    "screen_name": "category_totals"
                 }
             )
 
@@ -1490,6 +1507,12 @@ class CategoryTotalsScreen(Screen):
             self.filter_month_input.text = str(current_date.month)
         if self.filter_year_input:
             self.filter_year_input.text = str(current_date.year)
+        # Don't reset the income/expense toggle when clearing filters
+        self.refresh()
+        
+    def toggle_view_type(self) -> None:
+        """Toggle between showing income and expense categories"""
+        self.show_income = not self.show_income
         self.refresh()
         
     def initialize_filters(self) -> None:

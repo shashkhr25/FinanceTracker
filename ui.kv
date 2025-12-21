@@ -1162,19 +1162,52 @@
 					color: rgba("#000306ff")
 					font_size: sp(20)
 					bold: True
-					size_hint_x: 1.0
+					size_hint_x: 0.8
 					text_size: self.size
-					halign: "center"
+					halign: "left"
 					valign: "middle"
+					padding_x: dp(16)
+					
+				BoxLayout:
+					size_hint_x: 0.5
+					spacing: dp(8)
+					padding: [dp(8), 0, dp(8), 0]
+					
+					Label:
+						text: "Expenses"
+						color: rgba("#000306ff")
+						font_size: sp(10)
+						size_hint_x: 0.5
+						text_size: self.size
+						halign: "right"
+						valign: "middle"
+					
+					Switch:
+						id: view_toggle
+						size_hint_x: None
+						width: dp(40)
+						on_active: root.toggle_view_type()
+						active: False
+					
+					Label:
+						text: "Income"
+						color: rgba("#000306ff")
+						font_size: sp(10)
+						size_hint_x: 0.5
+						text_size: self.size
+						halign: "left"
+						valign: "middle"
+				
 				Label:
 					text: root.total_spending
 					color: rgba("#000306ff")
 					font_size: sp(20)
 					bold: True
-					size_hint_x: 1.0
+					size_hint_x: 0.8
 					text_size: self.size
-					halign: "center"
+					halign: "right"
 					valign: "middle"
+					padding_x: dp(16)
 					
 						
 					
