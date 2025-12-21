@@ -1467,23 +1467,23 @@ class CategoryTotalsScreen(Screen):
             if text_filter and text_filter not in category.lower():
                 continue
                 
-            # Only show budget for expenses
-            if not self.show_income:
-                budget = budgets.get(category, 0.0)
-                if budget > 0:
-                    variance = budget - abs(totals)  # Use absolute value for comparison
-                    variance_text = f"{variance:,.2f}"
+            # Handle budget and variance for both income and expenses
+            budget = budgets.get(category, 0.0)
+            if budget > 0:
+                if not self.show_income:
+                    # For expenses: positive variance is good (spent less than budget)
+                    variance = budget - abs(totals)
                     variance_color = "#10B981FF" if variance >= 0 else "#EF4444FF"
-                    budget_text = f"{budget:,.2f}"
                 else:
-                    variance_text = "-"
-                    variance_color = "#94A3B8FF"
-                    budget_text = ""
+                    # For income: positive variance is good (earned more than budget)
+                    variance = abs(totals) - budget
+                    variance_color = "#10B981FF" if variance >= 0 else "#EF4444FF"
+                variance_text = f"{abs(variance):,.2f}"
+                budget_text = f"{budget:,.2f}"
             else:
-                # For income, we don't show budget/variance
-                budget_text = ""
                 variance_text = "-"
                 variance_color = "#94A3B8FF"
+                budget_text = ""
                 
             formatted.append(
                 {
@@ -1510,10 +1510,6 @@ class CategoryTotalsScreen(Screen):
         # Don't reset the income/expense toggle when clearing filters
         self.refresh()
         
-    def toggle_view_type(self) -> None:
-        """Toggle between showing income and expense categories"""
-        self.show_income = not self.show_income
-        self.refresh()
         
     def initialize_filters(self) -> None:
         current_date = date.today()

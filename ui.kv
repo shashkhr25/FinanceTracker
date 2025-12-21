@@ -1162,55 +1162,36 @@
 					color: rgba("#000306ff")
 					font_size: sp(20)
 					bold: True
-					size_hint_x: 0.8
+					size_hint_x: 0.5
 					text_size: self.size
 					halign: "left"
 					valign: "middle"
 					padding_x: dp(16)
-					
-				BoxLayout:
-					size_hint_x: 0.5
-					spacing: dp(8)
-					padding: [dp(8), 0, dp(8), 0]
-					
-					Label:
-						text: "Expenses"
-						color: rgba("#000306ff")
-						font_size: sp(10)
-						size_hint_x: 0.5
-						text_size: self.size
-						halign: "right"
-						valign: "middle"
-					
-					Switch:
-						id: view_toggle
-						size_hint_x: None
-						width: dp(40)
-						on_active: root.toggle_view_type()
-						active: False
-					
-					Label:
-						text: "Income"
-						color: rgba("#000306ff")
-						font_size: sp(10)
-						size_hint_x: 0.5
-						text_size: self.size
-						halign: "left"
-						valign: "middle"
 				
+				BoxLayout:
+					size_hint_x: 0.2        
+					Button:
+						id: toggle_button
+						text: "Expenses" if not root.show_income else "Income"
+						font_size: sp(12)
+						size_hint_x: 0.5
+						background_color: rgba("#F8FAFC00")  # Transparent background
+						color: rgba("#4B5563")  # Softer gray text
+						on_release: 
+							root.show_income = not root.show_income
+							root.refresh()
+							self.text = "Expenses" if not root.show_income else "Income"				
 				Label:
 					text: root.total_spending
 					color: rgba("#000306ff")
 					font_size: sp(20)
 					bold: True
-					size_hint_x: 0.8
+					size_hint_x: 0.5
 					text_size: self.size
 					halign: "right"
 					valign: "middle"
 					padding_x: dp(16)
-					
-						
-					
+			
 			# Filters Section
 			BoxLayout:
 				orientation: "vertical"
