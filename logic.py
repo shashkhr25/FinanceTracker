@@ -263,25 +263,22 @@ def debug_transaction(tx) -> str:
 def get_billing_cycle(tx_date: date) -> tuple[date, date]:
     """Return the start and end dates of the billing cycle for a given date.
     
-    Billing cycle runs from the 19th of the current month to the 20th of the next month.
+    Billing cycle runs from the 20th of the current month to the 19th of the next month.
     """
-    if tx_date.day >= 19:
-        # Current month's 19th to next month's 20th
-        cycle_start = tx_date.replace(day=19)
-        # Calculate next month's 20th
+    if tx_date.day >= 20:
+        cycle_start = tx_date.replace(day=20)
         if tx_date.month == 12:
-            next_month = tx_date.replace(year=tx_date.year + 1, month=1, day=20)
+            next_month = tx_date.replace(year=tx_date.year + 1, month=1, day=19)
         else:
-            next_month = tx_date.replace(month=tx_date.month + 1, day=20)
+            next_month = tx_date.replace(month=tx_date.month + 1, day=19)
         cycle_end = next_month
     else:
-        # Previous month's 19th to current month's 20th
         if tx_date.month == 1:
-            prev_month = tx_date.replace(year=tx_date.year - 1, month=12, day=19)
+            prev_month = tx_date.replace(year=tx_date.year - 1, month=12, day=20)
         else:
-            prev_month = tx_date.replace(month=tx_date.month - 1, day=19)
+            prev_month = tx_date.replace(month=tx_date.month - 1, day=20)
         cycle_start = prev_month
-        cycle_end = tx_date.replace(day=20)
+        cycle_end = tx_date.replace(day=19)
     
     return cycle_start, cycle_end
 

@@ -960,7 +960,7 @@
                                     radius: [16, 16, 16, 16]
                             
                             Label:
-                                text: "Current Balance"
+                                text: "Liquid Balance"
                                 font_size: sp(14)
                                 color: rgba("#94A3B8FF")
                                 size_hint_y: None
@@ -970,7 +970,7 @@
                             
                             Label:
                                 text: root.current_balance_text
-                                font_size: sp(32)
+                                font_size: sp(28)
                                 color: rgba("#F8FAFCFF")
                                 size_hint_y: None
                                 height: self.texture_size[1]
@@ -978,14 +978,60 @@
                                 text_size: self.size
                                 bold: True
                             
-                            Label:
-                                text: root.balance_caption
-                                font_size: sp(12)
-                                color: rgba("#94A3B8FF")
+                            # Account Balance Breakdown
+                            BoxLayout:
+                                orientation: "vertical"
                                 size_hint_y: None
-                                height: self.texture_size[1]
-                                halign: "left"
-                                text_size: self.size
+                                height: dp(40)
+                                spacing: dp(2)
+                                padding: [dp(4), 0, 0, 0]
+                                
+                                # Account Balance
+                                BoxLayout:
+                                    orientation: "horizontal"
+                                    size_hint_y: 0.5
+									Label:
+                                        text: "Account:"
+                                        font_size: sp(12)
+                                        color: rgba("#94A3B8FF")
+                                        size_hint_x: 0.4
+                                        text_size: self.size
+                                        halign: "left"
+                                        valign: "top"
+                                        
+                                    Label:
+                                        id: account_balance
+                                        text: root.balance_caption.split('|')[0].split(':')[1].strip() if '|' in root.balance_caption else ""
+                                        font_size: sp(12)
+                                        color: rgba("#E2E8F0FF")
+                                        text_size: self.size
+                                        halign: "right"
+                                        valign: "bottom"
+                                        bold: True
+                                
+                                # Cash Balance        
+                                BoxLayout:
+                                    orientation: "horizontal"
+                                    size_hint_y: 0.5
+                                    
+                                    Label:
+                                        text: "Cash:"
+                                        font_size: sp(12)
+                                        color: rgba("#94A3B8FF")
+                                        size_hint_x: 0.4
+                                        text_size: self.size
+                                        halign: "left"
+                                        valign: "top"
+                                        
+                                    Label:
+                                        id: cash_balance
+                                        text: root.balance_caption.split('|')[1].split(':')[1].strip() if '|' in root.balance_caption else ""
+                                        font_size: sp(12)
+                                        color: rgba("#E2E8F0FF")
+                                        text_size: self.size
+                                        halign: "right"
+                                        valign: "top"
+                                        bold: True
                         
                         # Debt Card
                         BoxLayout:
