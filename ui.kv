@@ -246,7 +246,7 @@
 		background_normal: ""
 		background_color: 0,0,0,0
 		color: rgba("#000306ff")
-		on_release: app.root.current = "shared"
+		on_release: app.root.current = "shared_expenses"
 	Button:
 		text: "Networth"
 		background_normal: ""
@@ -533,7 +533,7 @@
 					Spinner:
 						id: device_spinner
 						text: "Paycheck"
-						values: ["Paycheck", "Home", "Personal split paid", "Refund", "Savings Withdraw", "Taken from Savings", "Others"]
+						values: ["Paycheck", "Rent", "Home", "Personal split paid", "Refund", "Savings Withdraw", "Taken from Savings", "Others"]
 					Label:
 						text: "Date"
 						color: rgba("#000306ff")
@@ -2070,6 +2070,10 @@
     detail_data: []
     participant_input: participant_input
     category_input: category_input
+    participant_details: []
+    participant_net: 0.0
+    selected_participant: ""
+    show_participant_details: False
     
     BoxLayout:
         orientation: "vertical"
@@ -2211,7 +2215,6 @@
                             on_text_validate: root.handle_filter_change()
                             font_size: sp(14)
                                         
-                    
                     BoxLayout:
                         orientation: "horizontal"
                         spacing: dp(12)
@@ -2248,47 +2251,122 @@
                                     size: self.size
                                     radius: [dp(8), dp(8), dp(8), dp(8)]
                 
-                # Summary section
+                # Main content area that toggles between summary and detail views
                 BoxLayout:
                     orientation: "vertical"
                     spacing: dp(8)
                     size_hint_y: None
                     height: max(dp(200), self.minimum_height)
                     
-                    Label:
-                        text: "Per-person Summary"
-                        color: rgba("#000306ff")
-                        font_size: sp(14)
-                        bold: True
+                    # Back button and title for participant details view
+                    BoxLayout:
+                        orientation: "horizontal"
                         size_hint_y: None
-                        height: dp(20)
-                        halign: "left"
-                        text_size: self.size
+                        height: dp(40) if root.show_participant_details else 0
+                        opacity: 1 if root.show_participant_details else 0
+                        disabled: not root.show_participant_details
+                        
+                        Button:
+                            text: "← Back to Summary"
+                            size_hint: None, None
+                            size: dp(150), dp(36)
+                            pos_hint: {'center_y': 0.5}
+                            background_color: rgba("#3B82F6FF")
+                            color: rgba("#FFFFFF")
+                            on_release: root.back_to_summary()
+                            canvas.before:
+                                Color:
+                                    rgba: self.background_color
+                                RoundedRectangle:
+                                    pos: self.pos
+                                    size: self.size
+                                    radius: [dp(8), dp(8), dp(8), dp(8)]
+                        
+                        Label:
+                            text: f"{root.selected_participant}'s Transactions"
+                            color: rgba("#000306ff")
+                            font_size: sp(16)
+                            bold: True
+                            halign: "left"
+                            valign: "middle"
+                            text_size: self.size
+                        
+                        Label:
+                            text: f"Net: {'₹{:,.2f}'.format(abs(root.participant_net))} {'to receive' if root.participant_net > 0 else 'to pay'}"
+                            color: rgba("#10B981FF") if root.participant_net > 0 else rgba("#EF4444FF")
+                            font_size: sp(16)
+                            bold: True
+                            halign: "right"
+                            valign: "middle"
+                            text_size: self.size
                     
+                    # Participant details view
                     BoxLayout:
                         orientation: "vertical"
-                        canvas.before:
-                            Color:
-                                rgba: rgba("#bbbfc2ff")
-                            RoundedRectangle:
-                                pos: self.pos
-                                size: self.size
-                                radius: [dp(12), dp(12), dp(12), dp(12)]
+                        spacing: dp(8)
+                        size_hint_y: None
+                        height: max(dp(400), self.minimum_height) if root.show_participant_details else 0
+                        opacity: 1 if root.show_participant_details else 0
+                        disabled: not root.show_participant_details
                         
                         RecycleView:
-                            viewclass: "SharedSummaryRow"
-                            data: root.summary_data
+                            viewclass: "ParticipantTransactionRow"
+                            data: root.participant_details
                             bar_width: dp(4)
                             bar_color: rgba("#3B82F6FF")
                             scroll_wheel_distance: dp(80)
                             
                             RecycleBoxLayout:
-                                default_size: None, dp(52)
+                                default_size: None, dp(80)
                                 default_size_hint: 1, None
                                 size_hint_y: None
                                 height: self.minimum_height
                                 orientation: "vertical"
-                                spacing: 0
+                                spacing: dp(8)
+                    
+                    # Summary section (hidden when showing participant details)
+                    BoxLayout:
+                        orientation: "vertical"
+                        spacing: dp(8)
+                        size_hint_y: None
+                        height: max(dp(200), self.minimum_height) if not root.show_participant_details else 0
+                        opacity: 0 if root.show_participant_details else 1
+                        disabled: root.show_participant_details
+                        
+                        Label:
+                            text: "Per-person Summary"
+                            color: rgba("#000306ff")
+                            font_size: sp(14)
+                            bold: True
+                            size_hint_y: None
+                            height: dp(20)
+                            halign: "left"
+                            text_size: self.size
+                        
+                        BoxLayout:
+                            orientation: "vertical"
+                            canvas.before:
+                                Color:
+                                    rgba: rgba("#bbbfc2ff")
+                                RoundedRectangle:
+                                    pos: self.pos
+                                    size: self.size
+                                    radius: [dp(12), dp(12), dp(12), dp(12)]
+                            
+                            RecycleView:
+                                viewclass: "SharedSummaryRow"
+                                data: root.summary_data
+                                bar_width: dp(4)
+                                bar_color: rgba("#3B82F6FF")
+                                scroll_wheel_distance: dp(80)
+                                
+                                RecycleBoxLayout:
+                                    default_size: None, dp(52)
+                                    default_size_hint: 1, None
+                                    size_hint_y: None
+                                    height: self.minimum_height
+                                    orientation: "vertical"
+                                    spacing: 0
                
 
 <SharedDetailRow@BoxLayout>:
@@ -2299,18 +2377,111 @@
     participants_text: ""
     notes_text: ""
     share_text: ""
+    is_expense: True
+    total_amount_text: ""
+
+<ParticipantTransactionRow@BoxLayout>:
+    date_text: ""
+    description_text: ""
+    amount_text: ""
+    total_amount_text: ""
+    is_expense: True
+    category_text: ""
+    participants_text: ""
+    notes_text: ""
     orientation: "horizontal"
     size_hint_y: None
     height: dp(72)
     padding: [dp(16), dp(16), dp(8), dp(16)]
     spacing: dp(12)
+    
     canvas.before:
         Color:
-            rgba: rgba("#1A202DFF")
+            rgba: rgba("#E2E8F0FF") if self.is_expense else rgba("#D1FAE5FF")
         RoundedRectangle:
             pos: self.pos
             size: self.size
-            radius: [dp(16), dp(16), dp(16), dp(16)]
+            radius: [dp(8), dp(8), dp(8), dp(8)]
+    
+    # Top row: Date, Description, Amount
+    BoxLayout:
+        orientation: "horizontal"
+        size_hint_y: None
+        height: dp(24)
+        
+        Label:
+            text: root.date_text
+            color: rgba("#475569FF")
+            font_size: sp(12)
+            size_hint_x: 0.25
+            text_size: self.size
+            valign: "middle"
+        
+        Label:
+            text: root.description_text
+            color: rgba("#1E293BFF")
+            font_size: sp(14)
+            bold: True
+            size_hint_x: 0.5
+            text_size: self.size
+            valign: "middle"
+            ellipsize: "..."
+        
+        Label:
+            text: f"-{root.amount_text}" if root.is_expense else f"+{root.amount_text}"
+            color: rgba("#B91C1CFF") if root.is_expense else rgba("#065F46FF")
+            font_size: sp(14)
+            bold: True
+            size_hint_x: 0.25
+            text_size: self.size
+            halign: "right"
+            valign: "middle"
+    
+    # Middle row: Category and Participants
+    BoxLayout:
+        orientation: "horizontal"
+        size_hint_y: None
+        height: dp(20)
+        
+        Label:
+            text: root.category_text
+            color: rgba("#475569FF")
+            font_size: sp(12)
+            size_hint_x: 0.4
+            text_size: self.size
+            valign: "middle"
+            
+        Label:
+            text: root.participants_text
+            color: rgba("#475569FF")
+            font_size: sp(12)
+            size_hint_x: 0.6
+            text_size: self.size
+            valign: "middle"
+            halign: "right"
+            ellipsize: "..."
+    
+    # Bottom row: Notes
+    BoxLayout:
+        orientation: "horizontal"
+        size_hint_y: None
+        height: dp(16)
+        
+        Label:
+            text: root.notes_text
+            color: rgba("#94A3B8FF")
+            font_size: sp(11)
+            text_size: self.size
+            valign: "middle"
+            ellipsize: "..."
+            
+        Label:
+            text: f"Total: {root.total_amount_text}" if root.total_amount_text else ""
+            color: rgba("#64748BFF")
+            font_size: sp(11)
+            text_size: self.size
+            halign: "right"
+            valign: "middle"
     
     # Date
     Label:
@@ -2409,4 +2580,5 @@ MoneyTrackerScreenManager:
 	CategoryTotalsScreen:
 	SettingsScreen:
 	NetWorthScreen:
+	UserScreen:
 	SharedExpensesScreen:

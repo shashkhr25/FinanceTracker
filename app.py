@@ -14,6 +14,7 @@ from kivy.properties import (
     ObjectProperty,
     ListProperty,
     BooleanProperty,
+    NumericProperty,
     DictProperty,
 )
 from kivy.clock import Clock
@@ -297,18 +298,15 @@ class AddIncomeDialog(ModalView):
         # Set device to CASH if the toggle is on, otherwise use the selected device
         if cash_toggle_active:
             device = "CASH"
-            category_text = ""
+            category_text = "CASH"
             print(f"Setting device to CASH for amount: {amount}")
         else:
+            # Get the selected device text and ensure it matches the exact case from the spinner
             device_text = (self.device_spinner.text or "").strip()
-            device = device_text.upper()
-            # Only apply savings withdrawal logic if not a cash transaction
-            if device_text.lower() in ("savings withdraw", "taken from savings"):
-                device = "SAVINGS_WITHDRAW"
-                category_text = "Taken from Savings"
-            else:
-                category_text = ""
-            print(f"Using device: {device}")
+            # Use the exact text from the spinner for both device and category
+            device = device_text
+            category_text = device_text
+            print(f"Using device: {device} with category: {category_text}")
 
         txn_date = _parse_date_or_today(self.date_input.text if self.date_input else "")
 
@@ -1550,6 +1548,10 @@ class SharedExpensesScreen(Screen):
     summary_caption = StringProperty("No participants yet")
     detail_caption = StringProperty("No shared transactions yet")
     filters_caption = StringProperty("All participants • All categories")
+    selected_participant = StringProperty("")
+    participant_details = ListProperty([])
+    participant_net = NumericProperty(0.0)
+    show_participant_details = BooleanProperty(False)
 
     def on_pre_enter(self, *_) -> None:
         self.refresh()
@@ -1557,31 +1559,41 @@ class SharedExpensesScreen(Screen):
     def refresh(self) -> None:
         ensure_data_dir()
         rows = read_transactions()
-        transactions = [transaction_from_row(row) for row in rows]
+        self.transactions = [transaction_from_row(row) for row in rows]
         participant = (self.participant_input.text or "").strip() if self.participant_input else ""
         category = (self.category_input.text or "").strip() if self.category_input else ""
-        summary, details = summarize_shared_expenses(
-            transactions,
+        
+        # If we have a selected participant from the detailed view, keep it
+        if not participant and self.selected_participant and not self.show_participant_details:
+            participant = self.selected_participant
+            if self.participant_input:
+                self.participant_input.text = participant
+        
+        self.summary, self.details = summarize_shared_expenses(
+            self.transactions,
             participant_filter=participant or None,
             category_filter=category or None,
         )
-        sorted_summary = sorted(summary.items(), key=lambda item: item[1], reverse=True)
+        
+        sorted_summary = sorted(self.summary.items(), key=lambda item: item[1], reverse=True)
         self.summary_data = [
             {
                 "label_text": name,
                 "amount_text": f"{value:,.2f}",
+                "on_release": lambda x=name: self.show_participant_detail(x)
             }
             for name, value in sorted_summary
         ]
-        total_shared = sum(summary.values())
+        
+        total_shared = sum(self.summary.values())
         self.total_shared_text = f"{total_shared:,.2f}"
-        self.summary_caption = self._format_summary_caption(len(summary))
-        self.detail_caption = self._format_detail_caption(len(details))
+        self.summary_caption = self._format_summary_caption(len(self.summary))
+        self.detail_caption = self._format_detail_caption(len(self.details))
         self.filters_caption = self._format_filters_caption(participant, category)
 
         participant_lookup = participant.lower() if participant else ""
         detail_rows = []
-        for tx, allocations in details:
+        for tx, allocations in self.details:
             participants_text = " • ".join(
                 f"{name} ({amount:,.2f})" for name, amount in sorted(allocations.items())
             )
@@ -1601,9 +1613,88 @@ class SharedExpensesScreen(Screen):
                     "participants_text": participants_text or "No participants recorded",
                     "notes_text": tx.shared_notes or "",
                     "share_text": share_text,
+                    "on_release": lambda x=tx: self.show_transaction_detail(x)
                 }
             )
         self.detail_data = detail_rows
+        
+        # If we're showing participant details, update them
+        if self.show_participant_details and self.selected_participant:
+            self._update_participant_details(self.selected_participant)
+
+    def show_participant_detail(self, participant_name: str) -> None:
+        """Show detailed view for a specific participant."""
+        self.selected_participant = participant_name
+        self.show_participant_details = True
+        self._update_participant_details(participant_name)
+        
+    def _update_participant_details(self, participant_name: str) -> None:
+        """Update the detailed view for a participant."""
+        if not hasattr(self, 'transactions') or not self.transactions:
+            return
+            
+        participant_lower = participant_name.lower()
+        details = []
+        net_total = 0.0
+        
+        # Get all transactions involving this participant
+        for tx, allocations in self.details:
+            for name, amount in allocations.items():
+                if name.lower() == participant_lower:
+                    # Determine if this is an expense (positive) or income (negative)
+                    is_expense = tx.tx_type == "expense"
+                    sign = 1.0 if is_expense else -1.0
+                    
+                    # For DEBT_BORROWED, invert the amount to show as negative in shared expenses
+                    if tx.device == "DEBT_BORROWED":
+                        sign *= -1.0
+                    
+                    net_amount = sign * amount
+                    net_total += net_amount
+                    
+                    details.append({
+                        'date': tx.date,
+                        'description': tx.description or tx.sub_type.replace("_", " ").title(),
+                        'amount': amount,
+                        'is_expense': is_expense,
+                        'total_amount': tx.amount,
+                        'category': tx.category or "Uncategorised",
+                        'participants': ", ".join(f"{n} (₹{a:,.2f})" for n, a in allocations.items()),
+                        'notes': tx.shared_notes or ""
+                    })
+        
+        # Sort by date, newest first
+        details.sort(key=lambda x: x['date'], reverse=True)
+        
+        # Format for display
+        formatted_details = []
+        for detail in details:
+            formatted_details.append({
+                'date_text': detail['date'].strftime('%d %b %Y'),
+                'description_text': detail['description'],
+                'amount_text': f"₹{detail['amount']:,.2f}",
+                'total_amount_text': f"₹{detail['total_amount']:,.2f}",
+                'is_expense': detail['is_expense'],
+                'category_text': detail['category'],
+                'participants_text': detail['participants'],
+                'notes_text': detail['notes'] or "No notes"
+            })
+        
+        self.participant_details = formatted_details
+        self.participant_net = net_total
+        
+    def show_transaction_detail(self, transaction):
+        """Show detailed view for a specific transaction."""
+        # This can be implemented to show a modal with transaction details
+        pass
+        
+    def back_to_summary(self):
+        """Return to the summary view from participant details."""
+        self.show_participant_details = False
+        self.selected_participant = ""
+        if self.participant_input:
+            self.participant_input.text = ""
+        self.refresh()
 
     def handle_filter_change(self) -> None:
         self.refresh()
@@ -1653,10 +1744,15 @@ class SharedExpensesScreen(Screen):
 
     @staticmethod
     def _format_detail_caption(count: int) -> str:
-        if count <= 0:
-            return "0 shared transactions"
-        suffix = "transaction" if count == 1 else "transactions"
-        return f"{count} shared {suffix}"
+        if count == 0:
+            return "No shared transactions yet"
+        elif count == 1:
+            return "1 shared transaction"
+        else:
+            return f"{count} shared transactions"
+
+# Register SharedExpensesScreen with Kivy's Factory after the class is defined
+Factory.register('SharedExpensesScreen', cls=SharedExpensesScreen)
 
 
 class SettingsScreen(Screen):
@@ -1843,7 +1939,7 @@ class MoneyTrackerApp(MDApp):
         sm.add_widget(TransactionsScreen(name='transactions'))
         sm.add_widget(NetWorthScreen(name='networth'))
         sm.add_widget(CategoryTotalsScreen(name='category_totals'))
-        sm.add_widget(SharedExpensesScreen(name='shared'))
+        sm.add_widget(SharedExpensesScreen(name='shared_expenses'))
         sm.add_widget(SettingsScreen(name='settings'))
         
         return sm

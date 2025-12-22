@@ -1,5 +1,5 @@
 {
-  "current_user": "shashwat",
+  "current_user": "shashwat_2025",
   "users": {
     "shashwat": {
       "created_at": "2025-12-17 19:59:58.185862",
@@ -8,6 +8,10 @@
     "sarayu": {
       "created_at": "2025-12-17 20:01:12.035251",
       "data_dir": "data/users/sarayu"
+    },
+    "shashwat_2025": {
+      "created_at": "2025-12-22 22:34:34.717403",
+      "data_dir": "data/users/shashwat_2025"
     }
   }
 }
