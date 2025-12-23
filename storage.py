@@ -16,7 +16,7 @@ import shutil
 from user_manager import user_manager
 
 # --- Configuration & Constants ---
-DEFAULT_DATA_DIR = Path("data")
+DEFAULT_DATA_DIR = Path(os.getcwd() + "/MoneyTrackerdata")
 USER_DATA_DIR = DEFAULT_DATA_DIR / "users"
 
 # These are now just default filenames, actual paths will be determined at runtime
