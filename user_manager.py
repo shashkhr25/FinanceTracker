@@ -104,4 +104,4 @@ class UserManager:
             f.truncate()
 
 # Global instance
-user_manager = UserManager()
+user_manager = UserManager(data_dir=Path("MoneyTrackerdata"))
