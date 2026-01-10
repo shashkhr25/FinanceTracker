@@ -68,7 +68,7 @@ def ensure_data_dir(data_dir: Optional[Path] = None) -> None:
         if not user_manager.current_user:
             # If no user is logged in, create a temporary directory
             # This is a fallback and should only be used during initialization
-            data_dir = Path("data/temp")
+            data_dir = Path("MoneyTrackerdata/temp")
         else:
             data_dir = USER_DATA_DIR / user_manager.current_user
     

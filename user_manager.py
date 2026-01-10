@@ -9,7 +9,7 @@ from typing import Optional, Dict, Any
 class UserManager:
     """Manages user accounts and their data."""
     
-    def __init__(self, data_dir: Path = Path("data")):
+    def __init__(self, data_dir: Path = Path("MoneyTrackerdata")):
         """Initialize the user manager with the data directory."""
         self.data_dir = data_dir
         self.users_file = data_dir / "users.json"

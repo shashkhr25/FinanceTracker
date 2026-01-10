@@ -43,8 +43,7 @@ from kivymd.uix.list import OneLineIconListItem, MDList
 from storage import read_transactions, write_transactions, ensure_data_dir
 
 # Import user management
-from user_manager import UserManager
-user_manager = UserManager()
+from user_manager import UserManager, user_manager
 
 # Import and register UserScreen
 from screens.user_screen import UserScreen
@@ -82,8 +81,7 @@ from storage import (
     write_settings, 
     start_new_month_transactionfile,
     CSV_COLUMNS,
-    get_transactions_path,
-    get_settings_path
+    get_transactions_path
 )
 from logic import (
     Transaction,
@@ -1288,7 +1286,7 @@ class TransactionsScreen(Screen):
                 self.show_popup("Error", f"Failed to save transaction: {str(e)}")
             
             # Write the updated transactions back to the file
-            with open('data/transactions.csv', 'w', newline='', encoding='utf-8') as f:
+            with open(get_transactions_path(), 'w', newline='', encoding='utf-8') as f:
                 writer = csv.DictWriter(f, fieldnames=CSV_COLUMNS)
                 writer.writeheader()
                 writer.writerows(rows)
@@ -1930,7 +1928,7 @@ class MoneyTrackerApp(MDApp):
         Window.top = max(0, (screen_height - window_height) / 2)
         
         # Ensure users directory exists
-        (Path("data") / "users").mkdir(parents=True, exist_ok=True)
+        (user_manager.data_dir / "users").mkdir(parents=True, exist_ok=True)
         
         # Create screen manager first
         sm = MoneyTrackerScreenManager()
