@@ -309,8 +309,45 @@ def compute_outstanding_debt(transactions: Sequence[Transaction]) -> tuple[float
 
     # First pass: Process all transactions
     for tx in transactions:
-        # Skip if not an expense or doesn't have required attributes
-        if not hasattr(tx, 'tx_type') or tx.tx_type != "expense":
+        # Skip if transaction doesn't have required attributes
+        if not hasattr(tx, 'tx_type'):
+            continue
+        
+        # Get transaction details with safe defaults
+        device = getattr(tx, 'device', '').upper()
+        description = getattr(tx, 'description', '')
+        amount = abs(getattr(tx, 'amount', 0))
+        tx_date = getattr(tx, 'date', today)
+        
+        # Check if this is a credit card payment (either expense or income)
+        is_payment = (
+            getattr(tx, 'sub_type', '') == CREDIT_CARD_PAYMENT_SUB_TYPE or
+            'CREDIT CARD PAYMENT - ' in getattr(tx, 'description', '') or
+            (getattr(tx, 'category', '').lower() in CREDIT_CARD_PAYMENT_CATEGORY_KEYS and 
+             getattr(tx, 'device', '').upper() in ['UPI', 'BANK_TRANSFER'])
+        )
+        
+        # If it's a credit card payment, process it regardless of tx_type
+        if is_payment:
+            # Get billing cycle for this transaction
+            cycle_start, cycle_end = get_billing_cycle(tx_date)
+            cycle_key = (cycle_start, cycle_end)
+            
+            # Initialize cycle totals if not exists
+            if cycle_key not in cycle_totals:
+                cycle_totals[cycle_key] = {
+                    'expenses': 0.0,
+                    'payments': 0.0,
+                    'is_current': (cycle_start == current_cycle_start and cycle_end == current_cycle_end)
+                }
+            
+            # Add payment amount
+            cycle_totals[cycle_key]['payments'] += amount
+            print(f"CREDIT CARD PAYMENT: Added {amount} to payments for cycle {cycle_start} to {cycle_end}")
+            continue
+        
+        # For non-payment transactions, only process expenses
+        if tx.tx_type != "expense":
             continue
 
         # Get transaction details with safe defaults
@@ -319,7 +356,7 @@ def compute_outstanding_debt(transactions: Sequence[Transaction]) -> tuple[float
         category = getattr(tx, 'category', '').lower()
         amount = abs(getattr(tx, 'amount', 0))
         tx_date = getattr(tx, 'date', today)
-        
+
         # Get billing cycle for this transaction
         cycle_start, cycle_end = get_billing_cycle(tx_date)
         cycle_key = (cycle_start, cycle_end)
@@ -360,16 +397,12 @@ def compute_outstanding_debt(transactions: Sequence[Transaction]) -> tuple[float
                 print(f"BORROWED: Added {amount} to borrowed debt")
             continue
 
-        # For credit card transactions, check if it's a payment
-        is_payment = any(term in description for term in ['payment', 'bill', 'paid', 'clear', 'settle', 'repay'])
-        
-        # Process payment or expense
-        if is_payment:
-            cycle_totals[cycle_key]['payments'] += amount
-            print(f"CREDIT CARD PAYMENT: Added {amount} to payments for cycle {cycle_start} to {cycle_end}")
-        else:
+        # Process credit card expenses
+        if is_credit_card:
+            # Add to expenses
             cycle_totals[cycle_key]['expenses'] += amount
             print(f"CREDIT CARD EXPENSE: Added {amount} to expenses for cycle {cycle_start} to {cycle_end}")
+        continue
     
     # Calculate total credit card debt
     credit_card_debt = 0.0
@@ -377,23 +410,20 @@ def compute_outstanding_debt(transactions: Sequence[Transaction]) -> tuple[float
     total_expenses = 0.0
     total_payments = 0.0
     
-    # First, calculate total expenses and payments across all cycles
-    all_expenses = sum(totals['expenses'] for totals in cycle_totals.values())
-    all_payments = sum(totals['payments'] for totals in cycle_totals.values())
+    # Process cycles in chronological order to apply payments correctly
+    sorted_cycles = sorted(cycle_totals.items(), key=lambda x: x[0][0])  # Sort by cycle start date
     
-    # Process cycles in chronological order to show breakdown
-    for (cycle_start, cycle_end), totals in sorted(cycle_totals.items()):
-        cycle_balance = totals['expenses'] - totals['payments']
+    print("\n=== Billing Cycle Details ===")
+    for (cycle_start, cycle_end), totals in sorted_cycles:
         is_current = (cycle_start, cycle_end) == (current_cycle_start, current_cycle_end)
+        cycle_balance = totals['expenses'] - totals['payments']
         
         if is_current:
-            # For current cycle, include all expenses in debt calculation
-            current_cycle_debt = totals['expenses']  # Include all expenses, regardless of payments
             print(f"\nCurrent Cycle ({cycle_start} to {cycle_end}):")
-            print(f"  Expenses: {totals['expenses']:.2f} (all included in debt)")
-            print(f"  Payments: {totals['payments']:.2f} (applied to oldest debt first)")
+            print(f"  Expenses: {totals['expenses']:.2f}")
+            print(f"  Payments: {totals['payments']:.2f}")
+            current_cycle_debt = max(0, cycle_balance)  # Only positive balance adds to debt
         else:
-            # For past cycles, show the balance but don't include in debt if payments exceed expenses
             print(f"\nPast Cycle ({cycle_start} to {cycle_end}):")
             print(f"  Expenses: {totals['expenses']:.2f}")
             print(f"  Payments: {totals['payments']:.2f}")
@@ -402,15 +432,35 @@ def compute_outstanding_debt(transactions: Sequence[Transaction]) -> tuple[float
         total_expenses += totals['expenses']
         total_payments += totals['payments']
     
-    # Total debt is all expenses minus payments, but not less than 0
-    credit_card_debt = max(0, all_expenses - all_payments)
+    # Total debt calculation - apply payments to oldest expenses first
+    credit_card_debt = 0.0
+    remaining_payments = total_payments
+    
+    # Process cycles in chronological order (oldest first)
+    for (cycle_start, cycle_end), totals in sorted_cycles:
+        if remaining_payments <= 0:
+            # No more payments to apply
+            credit_card_debt += max(0, totals['expenses'])
+        else:
+            # Apply payments to this cycle's expenses
+            cycle_payment = min(totals['expenses'], remaining_payments)
+            cycle_balance = totals['expenses'] - cycle_payment
+            credit_card_debt += max(0, cycle_balance)
+            remaining_payments -= cycle_payment
+    
+    # Calculate total payments made (for reporting)
+    total_payments_made = sum(totals['payments'] for totals in cycle_totals.values())
     
     # If there are payments, show how they were applied
-    if all_payments > 0:
+    if total_payments > 0:
+        payments_applied = min(total_payments, total_expenses)
         print("\nPayment Application:")
-        print(f"  - Total Expenses: {all_expenses:.2f}")
-        print(f"  - Total Payments: {all_payments:.2f}")
+        print(f"  - Total Expenses: {total_expenses:.2f}")
+        print(f"  - Total Payments: {total_payments:.2f}")
+        print(f"  - Payments Applied to Debt: {payments_applied:.2f}")
         print(f"  - Remaining Debt: {credit_card_debt:.2f}")
+        if total_payments > total_expenses:
+            print(f"  - Excess Payments: {total_payments - total_expenses:.2f} (applied to current cycle)")
     
     # Calculate current cycle's unpaid expenses (for reference)
     current_cycle_totals = next((t for (s, e), t in cycle_totals.items() 
@@ -430,10 +480,10 @@ def compute_outstanding_debt(transactions: Sequence[Transaction]) -> tuple[float
     print(f"Total Debt: {credit_card_debt + borrowed_debt:.2f}")
     
     # Show how payments are being applied
-    if all_payments > 0:
+    if total_payments > 0:
         print("\nNote: Payments are applied to the oldest expenses first.")
-        print(f"  - {min(all_payments, all_expenses):.2f} applied to oldest expenses")
-        print(f"  - {max(0, all_payments - all_expenses):.2f} remaining payments (if any)")
+        print(f"  - {min(total_payments, total_expenses):.2f} applied to oldest expenses")
+        print(f"  - {max(0, total_payments - total_expenses):.2f} remaining payments (if any)")
     print("=" * 25 + "\n")
     
     return (round(credit_card_debt, 2), round(borrowed_debt, 2))
@@ -653,10 +703,17 @@ def create_credit_card_payment(
     device: str,
     location: str = "",
     occasion: str = "",
-) -> Transaction:
-    """Return transaction representing payment of credit-card bill."""
+) -> tuple[Transaction, Transaction]:
+    """Return two transactions representing payment of credit-card bill.
+    
+    Returns:
+        tuple: (payment_tx, debt_reduction_tx)
+        - payment_tx: Expense transaction that reduces bank balance
+        - debt_reduction_tx: Income transaction that reduces credit card debt
+    """
 
-    return create_expense_transaction(
+    # Create the payment transaction (reduces bank balance)
+    payment_tx = create_expense_transaction(
         amount=amount,
         date_value=date_value,
         description=description,
@@ -667,6 +724,21 @@ def create_credit_card_payment(
         sub_type=CREDIT_CARD_PAYMENT_SUB_TYPE,
         effects_balance=True,
     )
+    
+    # Create the debt reduction transaction (reduces credit card debt)
+    debt_reduction_tx = create_income_transaction(
+        amount=amount,
+        date_value=date_value,
+        description=f"DEBT CLEARED - {description}",
+        category=DEBT_CLEARED_CATEGORY,
+        device=device,
+        location=location,
+        occasion=occasion,
+        sub_type=CREDIT_CARD_PAYMENT_SUB_TYPE,
+        effects_balance=False,  # This should NOT affect the liquid balance
+    )
+    
+    return payment_tx, debt_reduction_tx
 
 
 def create_expense_transaction(

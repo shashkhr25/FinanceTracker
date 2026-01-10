@@ -433,19 +433,27 @@ class DashboardScreen(Screen):
     ) -> None:
         txn_date = txn_date or date.today()
         cleaned_device = device.strip().upper() if device else ""
-        normalized_category = (category or "").strip().lower()
-
+        normalized_category = (category or "").strip().lower()  # Convert to lowercase for comparison
+        
         transactions = []
         if normalized_category in CREDIT_CARD_PAYMENT_CATEGORY_KEYS:
-            transactions.append(
-                create_credit_card_payment(
-                    amount=amount,
-                    date_value=txn_date,
-                    description=description,
-                    category=category,
-                    device="CREDIT_CARD",  # Explicitly set to CREDIT_CARD for payments
-                )
+            # Create both the payment and debt reduction transactions
+            payment_tx, debt_reduction_tx = create_credit_card_payment(
+                amount=amount,
+                date_value=txn_date,
+                description=description,
+                category="Credit Card Payment",
+                device="BANK_TRANSFER"
             )
+            
+            # Add a note to the payment
+            payment_tx.notes = f"Payment of ₹{amount:.2f} towards credit card bill"
+            
+            # Add both transactions
+            transactions.extend([payment_tx, debt_reduction_tx])
+            print(f"Processed credit card payment of ₹{amount:.2f}")
+            print("This will reduce both your bank balance and credit card debt.")
+            return
         elif "credit card" in description.lower() or "creditcard" in description.lower() or cleaned_device in CREDIT_CARD_DEVICES:
             # If description indicates it's a credit card transaction, ensure correct device
             device = "CREDIT_CARD_UPI" if "upi" in description.lower() or cleaned_device == "CREDIT_CARD_UPI" else "CREDIT_CARD"
